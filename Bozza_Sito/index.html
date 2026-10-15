@@ -1,0 +1,215 @@
+<title>Portale CPT Trevano</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: barra in alto con selettore "vedi come", menu a schede, contenuto a una colonna con card per attività */
+:root{--bg:#eef2f1;--card:#fff;--ink:#12242b;--mute:#58696f;--line:#d3dcda;--accent:#0a6a6a;--accent-ink:#fff;--soft:#dcefed;--warn:#b86e00;--warn-soft:#fbeed3;--bad:#a8321f;
+--f-d:"Bricolage Grotesque","Trebuchet MS",sans-serif;--f-b:"Source Sans 3","Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1e;--card:#16262c;--ink:#e6efee;--mute:#93a6a9;--line:#2a3f46;--accent:#4fc3b9;--accent-ink:#06201f;--soft:#173a3a;--warn:#f0b04a;--warn-soft:#3a2d12;--bad:#ff8f7a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1a1e;--card:#16262c;--ink:#e6efee;--mute:#93a6a9;--line:#2a3f46;--accent:#4fc3b9;--accent-ink:#06201f;--soft:#173a3a;--warn:#f0b04a;--warn-soft:#3a2d12;--bad:#ff8f7a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-b);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:980px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-d);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-size:1.6rem;font-weight:800;margin-bottom:4px}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0}
+.bozza{background:var(--warn-soft);color:var(--warn);font-size:.85rem;padding:6px 16px;margin-inline:-16px;text-align:center}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding-block:16px}
+.logo{font-family:var(--f-d);font-weight:800;font-size:1.3rem}
+.logo small{display:block;font:400 .8rem var(--f-b);color:var(--mute)}
+.who{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.9rem;color:var(--mute)}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input[type=text],input[type=password],input[type=search],input[type=number],textarea{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;max-width:100%}
+textarea{width:100%;min-height:80px}
+nav{display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--line);margin-bottom:24px}
+nav button{background:none;border:0;padding:10px 14px;white-space:nowrap;cursor:pointer;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button[aria-current=page]{color:var(--accent);border-color:var(--accent);font-weight:600}
+nav button:hover{color:var(--ink)}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:600}
+.btn.sec{background:none;color:var(--accent);border:1px solid var(--accent)}
+.btn.off{background:var(--line);color:var(--mute);cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sub{color:var(--mute);margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .meta{font-size:.85rem;color:var(--mute);display:flex;flex-wrap:wrap;gap:4px 12px}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--accent);font-weight:600;letter-spacing:.03em}
+.tag.w{background:var(--warn-soft);color:var(--warn)}
+.tag.b{background:var(--line);color:var(--mute)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.full{background:var(--bad)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.filters>*{flex:1 1 150px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row.sp{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:14px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+td{font-variant-numeric:tabular-nums}
+label{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--mute)}
+form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+form.f .full{grid-column:1/-1}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;counter-reset:s}
+.steps .card::before{counter-increment:s;content:"Passo " counter(s);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.note{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.92rem}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:6px;font-size:.92rem;max-width:90vw}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.big{font-family:var(--f-d);font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:var(--accent)}}
+</style>
+<div class="bozza">BOZZA: dati di esempio, le funzioni sono solo dimostrative. Nessun dato viene salvato.</div>
+<div class="wrap">
+<header>
+  <div class="logo">Portale CPT Trevano<small>Giornate Autogestite · Eco Comitato · Assemblea paritetica · anno <span id="anno">2026-2027</span></small></div>
+  <div class="who"><label style="flex-direction:row;align-items:center;gap:8px">Guarda il sito come
+    <select id="ruolo"></select></label></div>
+</header>
+<nav id="nav" aria-label="Menu principale"></nav>
+<main id="main"></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script>
+const RUOLI={
+ allievo:{n:"Allievo (ruolo base)",v:["home","gaelenco","miei","proponi","eco","sond"]},
+ docente:{n:"Docente",v:["home","gaelenco","miei","proponi","eco","sond"]},
+ org:{n:"Allievo che organizza un'attività",v:["home","gaelenco","miei","proponi","mia","eco","sond"]},
+ rga:{n:"Allievo + Responsabile GA",v:["home","gaelenco","miei","proponi","gestga","eco","sond"]},
+ reco:{n:"Allievo + Responsabile Eco Comitato",v:["home","gaelenco","miei","proponi","eco","gesteco","sond"]},
+ ass:{n:"Allievo + Membro Assemblea",v:["home","gaelenco","miei","proponi","eco","ass","sond"]},
+ sito:{n:"Responsabile sito (Yasser)",v:["home","gaelenco","miei","proponi","mia","gestga","eco","gesteco","ass","sond","admin"]}
+};
+const PAGE={home:"Home",gaelenco:"Attività GA",miei:"Il mio programma",proponi:"Proponi attività",mia:"La mia attività",gestga:"Gestione GA",eco:"Eco Comitato",gesteco:"Gestione Eco",ass:"Assemblea",sond:"Sondaggi",admin:"Amministrazione",accesso:"Accesso"};
+const BLOCCHI=["Blocco 1","Blocco 2","Blocco 3","Blocco 4"];
+let ATT=[
+ {id:1,t:"Combattimento medievale",d:"Dimostrazione e prova pratica con spade di legno, a cura di un'associazione.",b:0,a:"Palestra",r:"Associazione esterna",tp:"Relatore",max:30,n:22},
+ {id:2,t:"Introduzione al Python",d:"Primi script in due ore, con il proprio portatile.",b:1,a:"Aula 112",r:"Marco B. (4I)",tp:"Allievo",max:20,n:20},
+ {id:3,t:"Fotografia con il telefono",d:"Luce, inquadratura e un piccolo concorso finale.",b:2,a:"Aula 204",r:"Prof.ssa Rossi",tp:"Docente",max:25,n:11},
+ {id:4,t:"Torneo di calcio",d:"Squadre da minimo 5 giocatori, iscrizione con nome squadra.",b:3,a:"Campo esterno",r:"Luca T. (3E)",tp:"Allievo",max:70,n:34},
+ {id:5,t:"Primo soccorso",d:"Rianimazione e posizione laterale di sicurezza con un soccorritore.",b:0,a:"Aula 301",r:"Samaritani Lugano",tp:"Relatore",max:24,n:9},
+ {id:6,t:"Cucina senza forno",d:"Tre ricette veloci da preparare e assaggiare insieme.",b:1,a:"Cucina",r:"Giulia S. (2C)",tp:"Allievo",max:12,n:12},
+ {id:7,t:"Stampa 3D: dal modello all'oggetto",d:"Si disegna un portachiavi e lo si stampa.",b:2,a:"Laboratorio 3D",r:"Prof. Bianchi",tp:"Docente",max:15,n:6},
+ {id:8,t:"Yoga e rilassamento",d:"Una sessione tranquilla prima del pranzo.",b:0,a:"Palestra 2",r:"Elena V. (4D)",tp:"Allievo",max:25,n:14}
+];
+let DA_APPROVARE=[{t:"Laboratorio di scrittura creativa",o:"Sara M., 3B",b:"Blocco 2",a:"Aula 105"},{t:"Gioco da tavolo: Catan e altro",o:"Dani R., 2A",b:"Blocco 3",a:"Aula 210"}];
+let miei=new Set([3]), ecoIsc=new Set(), apertaGA=true, aulaAperta=true, presente=false, voto=null;
+let ruolo="allievo", pagina="home", fil={q:"",b:"",a:"",tp:""};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function barra(a){const p=Math.round(a.n/a.max*100);return `<div class="bar" role="img" aria-label="${a.n} di ${a.max} posti occupati"><i class="${a.n>=a.max?"full":""}" style="width:${p}%"></i></div>`}
+function card(a,azioni=true){
+ const piena=a.n>=a.max, io=miei.has(a.id);
+ return `<article class="card"><div class="row sp"><span class="tag">${BLOCCHI[a.b]}</span><span class="tag b">${a.tp}</span></div>
+ <h3>${esc(a.t)}</h3><p>${esc(a.d)}</p>
+ <div class="meta"><span>${esc(a.a)}</span><span>${esc(a.r)}</span></div>${barra(a)}
+ <div class="row sp"><span class="meta">${piena?"Posti esauriti":(a.max-a.n)+" posti liberi su "+a.max}</span>
+ ${azioni?(io?`<button class="btn sec" data-a="disiscrivi" data-id="${a.id}">Annulla iscrizione</button>`:`<button class="btn ${piena||!apertaGA?"off":""}" data-a="iscrivi" data-id="${a.id}">Iscriviti</button>`):""}</div></article>`;
+}
+const P={
+accesso:()=>`<h2>Accesso</h2><p class="sub">Per entrare servono il tuo ID e il codice generale che trovi dal rappresentante di classe.</p>
+ <div class="steps"><div class="card"><h3>ID e codice generale</h3><label>ID<input type="text" placeholder="es. ssl586@studenti.edu.ti.ch"></label><label>Codice generale<input type="text"></label><label>Nome<input type="text"></label><label>Cognome<input type="text"></label><label>Sono<select id="tipo"><option>Allievo</option><option>Docente</option><option>Relatore</option></select></label><label id="lcl">Classe<input type="text" placeholder="es. I3B"></label></div>
+ <div class="card"><h3>Codice personale</h3><p>Ricevi per e-mail un codice tuo, che serve a distinguerti dagli altri.</p><label>Codice personale<input type="text"></label></div>
+ <div class="card"><h3>Scegli la password</h3><label>Password<input type="password"></label><label>Ripeti password<input type="password"></label><button class="btn" data-a="toast" data-m="Esempio: la registrazione non è attiva">Crea l'account</button></div></div>
+ <div class="note" style="margin-top:16px">Chi si registra come docente o relatore resta allievo finché il Responsabile sito non conferma il ruolo. Se dimentichi la password, la reimposti con un nuovo codice via e-mail.</div>`,
+home:()=>`<h2>Benvenuto</h2><p class="sub">Giornate Autogestite, Eco Comitato e Assemblea paritetica in un solo posto. Le attività sono proposte da allievi, docenti e relatori esterni; i posti si aggiornano in diretta.</p>
+ <div class="grid"><div class="card"><span class="tag w">Date</span><p class="big">da definire</p><p class="meta">Le date vengono comunicate qui appena decise.</p></div>
+ <div class="card"><span class="tag">Iscrizioni</span><p class="big">${apertaGA?"Aperte":"Chiuse"}</p><p class="meta">${ATT.length} attività disponibili</p><button class="btn" data-p="gaelenco">Vedi le attività</button></div>
+ <div class="card"><span class="tag">Il mio programma</span><p class="big">${miei.size}</p><p class="meta">attività scelte finora</p><button class="btn sec" data-p="miei">Apri</button></div></div>
+ <h3 style="margin:28px 0 10px">Sondaggio attivo</h3><div class="card"><p>Quali capi vanno permessi nel regolamento di abbigliamento?</p><button class="btn sec" data-p="sond" style="align-self:start">Vota</button></div>
+ <h3 style="margin:28px 0 10px">Come funziona</h3><div class="steps"><div class="card"><p>Chi propone un'attività si iscrive per primo.</p></div><div class="card"><p>Scegli un'attività per ogni blocco orario.</p></div><div class="card"><p>Chi non si iscrive viene assegnato a un'attività a caso.</p></div></div>`,
+gaelenco:()=>{const f=fil;const l=ATT.filter(a=>(!f.q||(a.t+a.d+a.r).toLowerCase().includes(f.q.toLowerCase()))&&(f.b===""||a.b==f.b)&&(!f.a||a.a===f.a)&&(!f.tp||a.tp===f.tp));
+ const aule=[...new Set(ATT.map(a=>a.a))];
+ return `<h2>Attività GA</h2><p class="sub">Filtra per orario, aula, chi la organizza o cerca per nome.</p>
+ <div class="filters"><input type="search" id="fq" placeholder="Cerca attività o persona" value="${esc(f.q)}">
+ <select id="fb"><option value="">Tutti i blocchi</option>${BLOCCHI.map((b,i)=>`<option value="${i}" ${f.b==i&&f.b!==""?"selected":""}>${b}</option>`).join("")}</select>
+ <select id="fa"><option value="">Tutte le aule</option>${aule.map(x=>`<option ${f.a===x?"selected":""}>${x}</option>`).join("")}</select>
+ <select id="ft"><option value="">Allievi, docenti, relatori</option>${["Allievo","Docente","Relatore"].map(x=>`<option ${f.tp===x?"selected":""}>${x}</option>`).join("")}</select></div>
+ ${apertaGA?"":`<div class="note" style="margin-bottom:14px">Le iscrizioni sono chiuse.</div>`}
+ <div class="grid">${l.map(a=>card(a)).join("")||"<p>Nessuna attività con questi filtri.</p>"}</div>`},
+miei:()=>{const l=ATT.filter(a=>miei.has(a.id)).sort((a,b)=>a.b-b.b);
+ return `<h2>Il mio programma</h2><p class="sub">Un'attività per blocco. I blocchi senza scelta vengono assegnati a caso.</p>
+ <div class="stack">${BLOCCHI.map((b,i)=>{const a=l.find(x=>x.b===i);return `<div class="card"><div class="row sp"><span class="tag">${b}</span>${a?"":`<span class="tag w">Nessuna scelta</span>`}</div>${a?`<h3>${esc(a.t)}</h3><p class="meta">${esc(a.a)} · ${esc(a.r)}</p>`:`<button class="btn sec" style="align-self:start" data-p="gaelenco">Scegli un'attività</button>`}</div>`}).join("")}</div>`},
+proponi:()=>`<h2>Proponi un'attività</h2><p class="sub">Chi propone un'attività si iscrive per primo. Il Responsabile GA la approva.</p>
+ <form class="f" id="fprop"><label>Nome dell'attività<input type="text" required></label><label>Organizzatore<input type="text" value="Il tuo nome e cognome"></label>
+ <label class="full">Breve spiegazione<textarea></textarea></label><label>E-mail<input type="text" value="già nel sito" disabled></label><label>Telefono<input type="text" placeholder="solo per l'organizzazione"></label>
+ <label>Aula o spazio preferito<select><option>Palestra</option><option>Aula con lavagna</option><option>Laboratorio</option><option>Esterno</option></select></label>
+ <label>Blocchi orari (anche più di uno)<select multiple size="4">${BLOCCHI.map(b=>`<option>${b}</option>`).join("")}</select></label>
+ <label>Giorno<select><option>Giorno 1 (da definire)</option><option>Giorno 2 (da definire)</option></select></label>
+ <label>Numero di allievi (min / max)<span class="row"><input type="number" value="5" style="width:80px"><input type="number" value="20" style="width:80px"></span></label>
+ <div class="full"><button class="btn" type="submit">Invia la proposta</button></div></form>`,
+mia:()=>{const a=ATT[1];return `<h2>La mia attività</h2><p class="sub">${esc(a.t)} · ${BLOCCHI[a.b]} · ${esc(a.a)}</p>
+ <div class="grid"><div class="card"><span class="tag">Iscritti</span><p class="big">${a.n}/${a.max}</p>${barra(a)}</div>
+ <div class="card"><span class="tag">Descrizione</span><textarea>${esc(a.d)}</textarea><button class="btn sec" style="align-self:start" data-a="toast" data-m="Esempio: modifica non salvata">Salva</button></div></div>
+ <h3 style="margin:24px 0 8px">Presenze</h3><div class="tbl"><table><tr><th>Allievo</th><th>Classe</th><th>Presente</th></tr>
+ ${["Anna Ferri|I3B","Davide Colla|I4I","Sofia Meier|I2A","Ivan Rossi|I3I"].map(x=>{const[n,c]=x.split("|");return `<tr><td>${n}</td><td>${c}</td><td><input type="checkbox" checked aria-label="Presente ${n}"></td></tr>`}).join("")}</table></div>
+ <p class="meta" style="margin-top:8px">Le presenze vanno segnate entro la fine dell'attività.</p>`},
+gestga:()=>`<h2>Gestione GA</h2><p class="sub">Tutto quello che serve al Responsabile GA.</p>
+ <div class="row" style="margin-bottom:16px"><label class="switch"><input type="checkbox" id="sw" ${apertaGA?"checked":""}> Iscrizioni ${apertaGA?"aperte":"chiuse"}</label>
+ <button class="btn sec" data-a="toast" data-m="Esempio: export non attivo">Esporta attività</button><button class="btn sec" data-a="toast" data-m="Esempio: export non attivo">Esporta allievi</button><button class="btn sec" data-a="toast" data-m="Esempio: export non attivo">Esporta presenze</button></div>
+ <div class="note" style="margin-bottom:16px">Presenze mancanti: Giulia S. (Cucina senza forno, Blocco 2).</div>
+ <h3 style="margin-bottom:8px">Da approvare (${DA_APPROVARE.length})</h3><div class="stack">${DA_APPROVARE.map((x,i)=>`<div class="card"><div class="row sp"><div><h3>${esc(x.t)}</h3><p class="meta">${x.o} · ${x.b} · ${x.a}</p></div><button class="btn" data-a="approva" data-i="${i}">Approva</button></div></div>`).join("")||`<p class="meta">Niente da approvare.</p>`}</div>
+ <h3 style="margin:24px 0 8px">Tutte le attività</h3><div class="tbl"><table><tr><th>Attività</th><th>Blocco</th><th>Aula</th><th>Iscritti</th></tr>${ATT.map(a=>`<tr><td>${esc(a.t)}</td><td>${BLOCCHI[a.b]}</td><td>${esc(a.a)}</td><td>${a.n}/${a.max}</td></tr>`).join("")}</table></div>`,
+eco:()=>`<h2>Eco Comitato</h2><p class="sub">L'aula dell'Eco Comitato: attività, materiali e posti.</p>
+ <div class="card" style="margin-bottom:16px"><div class="row sp"><div><span class="tag ${aulaAperta?"":"w"}">Aula ${aulaAperta?"aperta":"chiusa"}</span><p class="meta" style="margin-top:6px">Orario abituale 8:00–18:00</p></div><button class="btn ${ecoIsc.has("a")?"sec":""}" data-a="ecoisc" data-id="a">${ecoIsc.has("a")?"Annulla iscrizione":"Iscriviti all'aula"}</button></div></div>
+ <div class="grid">${[["Riparazione biciclette","Mer 12:30","Lorenzo T.",8],["Orto in cortile","Gio 13:00","Ramon P.",10],["Mercatino dei vestiti","Ven 12:00","Classe I2B",15]].map((x,i)=>`<article class="card"><span class="tag b">${x[1]}</span><h3>${x[0]}</h3><p class="meta">${x[2]} · max ${x[3]} persone</p><button class="btn ${ecoIsc.has(i)?"sec":""}" data-a="ecoisc" data-id="${i}">${ecoIsc.has(i)?"Annulla iscrizione":"Iscriviti"}</button></article>`).join("")}</div>
+ <p class="meta" style="margin-top:14px">Vuoi proporre un'attività o chiedere materiali? <button class="btn sec" data-a="toast" data-m="Esempio: la proposta passa da Ramon per l'approvazione">Proponi</button></p>
+ <p class="meta" style="margin-top:10px">Le 7 fasi di Eco-Schools si seguono su <a href="https://app.ecoschools-ch.org" target="_blank" rel="noopener">app.ecoschools-ch.org</a>.</p>`,
+gesteco:()=>`<h2>Gestione Eco Comitato</h2><p class="sub">Tre responsabili, ognuno con il suo compito.</p>
+ <div class="grid"><div class="card"><span class="tag">Aula · Lorenzo</span><label class="switch"><input type="checkbox" id="swa" ${aulaAperta?"checked":""}> Aula ${aulaAperta?"aperta":"chiusa"} (a mano)</label><p class="meta">Calendario: giorni, orari e periodi di chiusura.</p></div>
+ <div class="card"><span class="tag">Attività · Ramon</span><p>Da approvare: 1</p><p class="meta">Orto in cortile: richiede 3 vasi e terriccio.</p><button class="btn" data-a="toast" data-m="Esempio: approvata">Approva</button></div>
+ <div class="card"><span class="tag">Comunicazione · Yasser</span><p class="meta">Messaggi a docenti e direzione.</p></div></div>
+ <h3 style="margin:24px 0 8px">Materiali disponibili</h3><div class="tbl"><table><tr><th>Materiale</th><th>Quantità</th></tr><tr><td>Vasi</td><td>12</td></tr><tr><td>Attrezzi da giardino</td><td>6</td></tr><tr><td>Kit riparazione bici</td><td>2</td></tr></table></div>
+ <h3 style="margin:24px 0 8px">File condivisi tra i responsabili</h3><div class="card"><p class="meta">verbale_28.04.docx · allegato_cittadinanza.docx</p></div>`,
+ass:()=>`<h2>Assemblea paritetica</h2><p class="sub">Solo per i membri dell'Assemblea.</p>
+ <div class="grid"><div class="card"><span class="tag">Prossima assemblea</span><p class="big">da fissare</p><label class="switch"><input type="checkbox" id="swp" ${presente?"checked":""}> Sarò presente</label></div>
+ <div class="card"><span class="tag">Verbali</span><p><a href="#" data-a="toast" data-m="Esempio: nessun file">Verbale 06.10.2026</a></p><p><a href="#" data-a="toast" data-m="Esempio: nessun file">Verbale 22.04.2026</a></p></div></div>`,
+sond:()=>{const o=["Berretti","Pantaloncini corti","Infradito","Canotte"];const v=[41,28,12,19];
+ return `<h2>Sondaggi</h2><p class="sub">Vota, poi vedi i risultati.</p><div class="card"><h3>Quali capi vanno permessi nel regolamento di abbigliamento?</h3>
+ ${o.map((x,i)=>`<div class="row sp"><button class="btn ${voto===i?"":"sec"}" data-a="vota" data-i="${i}" style="min-width:170px">${x}</button><div style="flex:1;min-width:120px"><div class="bar"><i style="width:${v[i]+(voto===i?4:0)}%"></i></div></div><span class="meta">${voto!==null?v[i]+(voto===i?1:0):"?"}</span></div>`).join("")}
+ ${voto===null?"":`<p class="meta">Grazie, il tuo voto è registrato (esempio).</p>`}</div>`},
+admin:()=>`<h2>Amministrazione</h2><p class="sub">Solo il Responsabile sito.</p>
+ <div class="grid"><div class="card"><span class="tag">Anno scolastico</span><select><option>2026-2027</option><option>2027-2028</option></select><p class="meta">I dati degli anni passati restano privati e riutilizzabili.</p></div>
+ <div class="card"><span class="tag">Blocchi orari</span>${BLOCCHI.map((b,i)=>`<div class="row"><span style="width:70px">${b}</span><input type="text" value="${["8:30–10:00","10:15–11:45","12:45–14:15","14:30–16:00"][i]}" style="width:120px"></div>`).join("")}<p class="meta">Modificabili in ogni momento.</p></div>
+ <div class="card"><span class="tag">Elenco allievi e codice generale</span><button class="btn sec" data-a="toast" data-m="Esempio: import non attivo">Carica elenco ID</button><label>Codice generale<input type="text" value="••••••"></label></div></div>
+ <h3 style="margin:24px 0 8px">Utenti e ruoli</h3><div class="tbl"><table><tr><th>Nome</th><th>Ruoli</th></tr>
+ <tr><td>Yasser O.</td><td><span class="tag">Responsabile sito</span> <span class="tag b">Allievo</span></td></tr>
+ <tr><td>Lorenzo T.</td><td><span class="tag">Resp. Eco: aula</span> <span class="tag b">Allievo</span></td></tr>
+ <tr><td>Prof.ssa Rossi</td><td><span class="tag b">Docente</span> <span class="tag">Membro Assemblea</span></td></tr></table></div>`
+};
+function render(){
+ const v=RUOLI[ruolo].v; if(pagina!=="accesso"&&!v.includes(pagina))pagina="home";
+ $("#nav").innerHTML=v.map(k=>`<button data-p="${k}" ${k===pagina?'aria-current="page"':""}>${PAGE[k]}</button>`).join("")+`<button data-p="accesso" ${pagina==="accesso"?'aria-current="page"':""} style="margin-left:auto">Accesso</button>`;
+ $("#main").innerHTML=P[pagina]();
+}
+$("#ruolo").innerHTML=Object.entries(RUOLI).map(([k,r])=>`<option value="${k}">${r.n}</option>`).join("");
+$("#ruolo").onchange=e=>{ruolo=e.target.value;pagina="home";render()};
+document.addEventListener("click",e=>{
+ const el=e.target.closest("[data-p],[data-a]"); if(!el)return;
+ if(el.dataset.p){pagina=el.dataset.p;render();window.scrollTo(0,0);return}
+ const a=el.dataset.a,id=+el.dataset.id; if(el.tagName==="A")e.preventDefault();
+ if(a==="toast")toast(el.dataset.m);
+ if(a==="iscrivi"){const x=ATT.find(z=>z.id===id);
+  if(!apertaGA)return toast("Le iscrizioni sono chiuse");
+  if(x.n>=x.max)return toast("Posti esauriti");
+  const dup=ATT.find(z=>miei.has(z.id)&&z.b===x.b); if(dup)return toast("Hai già «"+dup.t+"» in quel blocco");
+  miei.add(id);x.n++;toast("Iscritto a «"+x.t+"»");render()}
+ if(a==="disiscrivi"){miei.delete(id);ATT.find(z=>z.id===id).n--;render()}
+ if(a==="approva"){const x=DA_APPROVARE.splice(+el.dataset.i,1)[0];ATT.push({id:ATT.length+1,t:x.t,d:"Proposta approvata.",b:BLOCCHI.indexOf(x.b),a:x.a,r:x.o,tp:"Allievo",max:15,n:0});toast("Approvata e pubblicata");render()}
+ if(a==="ecoisc"){const k=el.dataset.id==="a"?"a":+el.dataset.id;ecoIsc.has(k)?ecoIsc.delete(k):ecoIsc.add(k);render()}
+ if(a==="vota"){voto=+el.dataset.i;render()}
+});
+document.addEventListener("input",e=>{
+ const i=e.target.id; if(i==="fq"){fil.q=e.target.value;const p=e.target.selectionStart;render();const n=$("#fq");n.focus();n.setSelectionRange(p,p)}
+});
+document.addEventListener("change",e=>{
+ const i=e.target.id,v=e.target.value;
+ if(i==="tipo")$("#lcl").hidden=v!=="Allievo";
+ if(i==="fb"){fil.b=v;render()} if(i==="fa"){fil.a=v;render()} if(i==="ft"){fil.tp=v;render()}
+ if(i==="sw"){apertaGA=e.target.checked;render()} if(i==="swa"){aulaAperta=e.target.checked;render()} if(i==="swp"){presente=e.target.checked;toast(presente?"Presenza segnata":"Presenza tolta")}
+});
+document.addEventListener("submit",e=>{e.preventDefault();toast("Esempio: la proposta andrebbe al Responsabile GA")});
+render();
+</script>
