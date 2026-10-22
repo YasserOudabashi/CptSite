@@ -32,10 +32,17 @@ Vincoli: nessuna API a pagamento/personale (il sito deve vivere senza Yasser); h
 Admin · Organizzatore GA · Docente · Allievo · Relatore (esterno) · Membro Eco Comitato · Membro Assemblea/Commissione · Direzione. Matrice permessi da definire insieme a Yasser (non chiederla alla direzione).
 - Dal sito Yasser assegna i ruoli alle persone. Una persona può avere più ruoli: i permessi si sommano (unione) e vanno gestite bene le sovrapposizioni/conflitti (es. allievo + organizzatore, docente + membro Assemblea).
 
+## Tornei (decisione 22.10)
+Niente "torneo di calcio": il sito gestisce più tornei di sport diversi, con tutto ciò che serve a organizzarli bene (squadre, gironi/eliminazione, campi, orari, arbitri, risultati, classifiche, tabellone). Ruoli: Resp. tornei, Organizzatore torneo, Arbitro. Risultati: solo arbitri e organizzatori del torneo. Anche gli organizzatori GA possono creare un torneo per la propria attività. Vedi PRD Fase 6 (US-031–039).
+
+## Seconda assemblea
+Il file dove mettere tutto ciò che riguarda la seconda assemblea (proposte, aggiornamenti, punti da portare) è `Assemblea/2026-2027/Prossima_Assemblea_Proposte_e_Aggiornamenti.docx`: aggiornare quello, non creare file nuovi.
+
 ## Fasi
 1. GA (attività, relatori/mail, iscrizioni allievi con posti in tempo reale, aule/orari, ruoli).
 2. Assemblea paritetica (ordine del giorno, presenze, verbale I/C/D/E, azioni).
-3. Eco Comitato (riunioni, verbali a rotazione, ruoli, sondaggi).
+3. Eco Comitato (Spazio, regolamento, turni gestori, attività, riunioni/verbali, sondaggi): PRD in `006_PRD/prd-eco-comitato.md` (ECO-001–022), scritto il 22.10 per la presentazione del 23.10.
+4. Tornei (nel PRD attuale come Fase 6).
 
 ## Spunti da aggiungere al sito (da discutere con Yasser: come, cosa, ruoli)
 - **Festa di fine anno** (verbale Assemblea 06.10.2026): gestirla dal sito. Data da fissare al più presto e budget da chiedere alla scuola. Feedback dalla festa dell'anno scorso: più attività, un posto migliore per la musica (l'anno scorso si stava sotto la stecca del sole), più tavoli.
@@ -51,7 +58,7 @@ Admin · Organizzatore GA · Docente · Allievo · Relatore (esterno) · Membro 
 - **Matrice permessi**: da fare dopo la bozza delle pagine del sito (Claude propone, Yasser conferma le pagine, poi si definiscono ruoli e permessi).
 
 ## Decisioni aperte
-Elenco pagine del sito → matrice permessi · date GA · conteggio allievi · prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · elenco ID allievi · torneo calcio (fase successiva).
+Prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · nome del sito. (Date GA, conteggio allievi ed elenco ID NON bloccano il sito: si inseriscono dal sito quando noti, 22.10.)
 
 ## Regole di lavoro
 - Domande prima di implementare (AskUserQuestion).
