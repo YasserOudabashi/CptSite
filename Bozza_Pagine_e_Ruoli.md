@@ -43,6 +43,9 @@ Regola trasversale: ogni dato ha un **anno scolastico** (2026-2027, 2027-2028…
 ## 4. Assemblea paritetica (solo membri)
 Verbali · date assemblee · segno presente/assente · Resp.: carica/toglie file, segna presenze, mette date.
 
+## 4b. Tornei
+Più tornei, sport diversi (squadre o singoli; gironi, eliminazione diretta, gironi + eliminazione). Pagine: elenco tornei + iscrizione squadra · pagina torneo (regolamento, calendario, classifiche, tabellone) · le mie partite · gestione (Resp. tornei/Organizzatore torneo: campi, orari, arbitri, risultati, export). Ruoli: Resp. tornei, Organizzatore torneo, Arbitro. Dettagli: PRD Fase 6.
+
 ## 5. Sondaggi
 Creati da qualsiasi responsabile; votano allievi e docenti; compaiono in Home.
 
@@ -53,4 +56,4 @@ Utenti e ruoli · import elenco ID allievi + codice generale · impostazioni (an
 Tre indirizzi Outlook nuovi (GA, Eco Comitato, Assemblea). **Il sito invia solo codice di registrazione e recupero password; per il resto le caselle ricevono.** Le altre mail in uscita (relatori, avvisi) le manda Claude via Claude in Chrome su richiesta, con testo mostrato prima dell'invio.
 
 ## Da decidere
-Blocchi orari (poi modificabili) · elenco ID allievi · indirizzi delle 3 caselle · torneo di calcio (fase successiva).
+Indirizzi delle 3 caselle. Date GA, blocchi orari, elenco ID e conteggio allievi: si inseriscono dal sito quando noti, non bloccano nulla.

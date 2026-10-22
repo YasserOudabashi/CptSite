@@ -30,6 +30,19 @@ Legenda: **V** vede · **M** crea/modifica · **A** approva.
 | Sondaggi: votare | M | M | | | | | | |
 | Sondaggi: creare | | | | | M | M | M | |
 
+### Tornei (ruoli aggiuntivi)
+Resp. tornei (più persone) · Organizzatore torneo (per singolo torneo) · Arbitro (per le partite assegnate).
+
+| Azione | Allievo / Docente | Organizzatore torneo (+) | Arbitro (+) | Resp. tornei (+) |
+|---|---|---|---|---|
+| Vedere tornei, calendario, classifiche, le mie partite | V | | | |
+| Iscrivere/ritirare la propria squadra o sé stessi | M | | | |
+| Aggiungere/togliere/approvare squadre a mano | | M (suo torneo) | | M |
+| Generare calendario, campi, orari, arbitri | | M (suo torneo) | | M |
+| Inserire/correggere risultati (solo arbitri e organizzatori) | | M (suo torneo) | M (sue partite) | |
+| Creare torneo collegato alla propria attività GA | | M (Organizzatore GA) | | M |
+| Creare torneo libero, assegnare organizzatori e arbitri, archivio, export | | | | M |
+
 Solo Resp. sito: utenti, ruoli, import ID, impostazioni (anno, date, blocchi orari).
 Resp. Eco: Lorenzo = aula · Yasser = comunicazione docenti/direzione · Ramon = gestione e approvazione attività.
 Il Responsabile GA approva da solo, senza altri passaggi nel sito (la Direzione approva fuori dal sito).

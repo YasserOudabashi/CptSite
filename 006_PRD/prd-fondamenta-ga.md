@@ -2,7 +2,7 @@
 
 ## 1. Introduzione
 
-Sito unico del CPT Trevano per gestire in tempo reale le Giornate Autogestite (GA). In seguito accoglierà anche Assemblea paritetica ed Eco Comitato (PRD separati). Questa prima versione contiene le **fondamenta** (registrazione, login, ruoli, anni scolastici, amministrazione) e tutta la **fase GA** (attività, iscrizioni con posti in tempo reale, presenze, esportazioni).
+Sito unico del CPT Trevano per gestire in tempo reale le Giornate Autogestite (GA). In seguito accoglierà anche Assemblea paritetica ed Eco Comitato (PRD separati). Questa prima versione contiene le **fondamenta** (registrazione, login, ruoli, anni scolastici, amministrazione) la **fase GA** (attività, iscrizioni con posti in tempo reale, presenze, esportazioni) e i **tornei** (più tornei, di sport diversi, con squadre, calendario, risultati e classifiche).
 
 Il nome del sito è provvisorio ("Portale CPT Trevano"). Bozza cliccabile: https://claude.ai/artifact/1G63Ddf6UgPNHBW31NY89B (file `Bozza_Sito/index.html`). Matrice dei permessi: `Matrice_Permessi_BOZZA.md`. Pagine: `Bozza_Pagine_e_Ruoli.md`.
 
@@ -15,11 +15,13 @@ Autore e Responsabile sito: Yasser Oudabashi. Il sito deve continuare a funziona
 - I posti liberi si aggiornano in diretta per tutti.
 - Il Responsabile GA vede tutto (attività, iscritti, presenze) ed esporta liste.
 - Ogni dato appartiene a un anno scolastico; gli anni non si mischiano e i dati vecchi si riutilizzano.
+- Organizzare tornei di qualsiasi sport (squadre o singoli, gironi, eliminazione diretta) con calendario, campi, arbitri, risultati e classifiche in diretta.
+- Date GA, elenco ID e numero di allievi non bloccano il sito: si possono inserire quando sono note.
 - Nessuna API a pagamento o personale; il sito non dipende da una sessione di Claude.
 
 ## 3. Ruoli (riassunto; dettagli in `Matrice_Permessi_BOZZA.md`)
 
-Ruolo base: **Allievo** o **Docente**; **Relatore** (esterno). Ruoli aggiuntivi: **Organizzatore** (derivato: chi ha proposto un'attività), **Responsabile GA** (più persone), **Responsabile sito** (tutto). I permessi di una persona sono l'**unione** di tutti i suoi ruoli. Il tipo di utente non si sceglie: gli allievi si registrano con ID + codice generale (ruolo Allievo), docenti e relatori entrano solo con un **link d'invito** creato dal Responsabile sito, che porta già il ruolo giusto (Docente o Relatore). La Direzione non ha un ruolo nel sito.
+Ruolo base: **Allievo** o **Docente**; **Relatore** (esterno). Ruoli aggiuntivi: **Organizzatore** (derivato: chi ha proposto un'attività), **Responsabile GA** (più persone), **Responsabile tornei** (più persone, gestisce tutti i tornei), **Organizzatore torneo** (per singolo torneo; lo diventa chi lo crea, anche un Organizzatore GA per la propria attività), **Arbitro** (per le partite assegnate), **Responsabile sito** (tutto). I permessi di una persona sono l'**unione** di tutti i suoi ruoli. Il tipo di utente non si sceglie: gli allievi si registrano con ID + codice generale (ruolo Allievo), docenti e relatori entrano solo con un **link d'invito** creato dal Responsabile sito, che porta già il ruolo giusto (Docente o Relatore). La Direzione non ha un ruolo nel sito.
 
 ## 4. User Stories
 
@@ -63,16 +65,17 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Errore SMTP: l'azione chiamante riceve un errore chiaro e nessun codice resta valido senza essere stato inviato
 - [ ] Typecheck passes
 
-### US-004: Import elenco ID allievi e codice generale
+### US-004: Codice generale ed elenco ID allievi (opzionale)
 
-**Description:** As Responsabile sito, I want to upload the list of valid student IDs and set the general code so that only real students can register.
+**Description:** As Responsabile sito, I want to upload the list of valid student IDs and set the general code so that only real students can register, without blocking the site while the list is not yet available.
 
 **Acceptance Criteria:**
 
 - [ ] Pagina admin con caricamento CSV (una riga per ID, es. `ssl586@studenti.edu.ti.ch`)
+- [ ] L'elenco è **facoltativo**: finché è vuoto, può registrarsi qualunque indirizzo del dominio scolastico (dominio in configurazione, es. `studenti.edu.ti.ch`) che conosce il codice generale; appena l'elenco è caricato, solo gli ID presenti
 - [ ] ID duplicati ignorati; riga non valida segnalata con numero di riga
 - [ ] Campo per impostare/cambiare il codice generale (salvato hashato)
-- [ ] L'elenco è legato all'anno scolastico corrente
+- [ ] L'elenco è legato all'anno scolastico corrente e si può caricare o aggiornare in qualunque momento, anche a iscrizioni già aperte (nessun allievo già registrato viene toccato)
 - [ ] Accessibile solo al Responsabile sito
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
@@ -84,7 +87,7 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 **Acceptance Criteria:**
 
 - [ ] Campi: ID, codice generale, nome, cognome, classe (nessuna scelta del tipo: chi usa questa pagina è un Allievo)
-- [ ] ID non presente nell'elenco o codice generale errato: messaggio d'errore generico, nessun dettaglio su quale dei due è sbagliato
+- [ ] ID fuori dal dominio scolastico, non presente nell'elenco (se caricato) o codice generale errato: messaggio d'errore generico, nessun dettaglio su quale dei due è sbagliato
 - [ ] Se valido: viene generato un codice personale casuale, salvato hashato con scadenza di 24 ore, e inviato all'indirizzo ID via e-mail
 - [ ] Un ID già registrato riceve il messaggio "account già esistente, usa il recupero password"
 - [ ] Limite di 5 tentativi per ora per ID e per IP
@@ -190,6 +193,7 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Creare un nuovo anno scolastico e sceglierlo come corrente
 - [ ] Elenco di blocchi orari modificabili (nome, inizio, fine) e date delle GA (anche "da definire")
 - [ ] Modifica di un blocco aggiorna subito tutte le pagine che lo mostrano
+- [ ] Le date GA possono restare "da definire": nessuna funzione del sito dipende dalle date, tutto funziona anche senza
 - [ ] Valori iniziali: 8:30–10:00, 10:15–11:45, 12:45–14:15, 14:30–16:00 (modificabili)
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
@@ -318,7 +322,8 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 **Acceptance Criteria:**
 
 - [ ] Pulsante "Assegna a caso" disponibile quando le iscrizioni sono chiuse
-- [ ] Per ogni allievo (dall'elenco ID registrato) e per ogni blocco senza iscrizione assegna un'attività con posti liberi e senza conflitti
+- [ ] Per ogni allievo registrato e per ogni blocco senza iscrizione assegna un'attività con posti liberi e senza conflitti
+- [ ] Se l'elenco ID è caricato, gli allievi dell'elenco non ancora registrati sono segnalati a parte (non assegnabili); senza elenco si lavora solo sui registrati, nessun conteggio totale richiesto
 - [ ] Anteprima con il numero di allievi da assegnare e i posti disponibili prima di confermare
 - [ ] Se i posti non bastano: elenco degli allievi non assegnabili, nessun assegnamento parziale silenzioso
 - [ ] Le assegnazioni sono segnate come "assegnate" e annullabili in blocco
@@ -418,9 +423,146 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
+### Fase 6 — Tornei
+
+Un torneo è indipendente dalle GA: ci possono essere più tornei contemporanei, di sport diversi (calcio, pallavolo, ping-pong, basket, ecc.). Lo sport è un'etichetta libera; il comportamento dipende da formato e tipo di punteggio, non dallo sport.
+
+### US-031: Schema tornei
+
+**Description:** As a developer, I need the tournament data model so that any sport and format can be stored per school year.
+
+**Acceptance Criteria:**
+
+- [ ] Tabelle: torneo (nome, attività GA collegata (facoltativa), sport, descrizione, regolamento, anno scolastico, stato), squadra, membro squadra, gruppo, partita, campo, arbitro, evento di partita
+- [ ] Torneo: modalità `squadre` o `singoli`, giocatori per squadra (min/max), formato, tipo di punteggio, punti per vittoria/pareggio/sconfitta, durata partita in minuti
+- [ ] Stati del torneo: `bozza` → `iscrizioni` → `in corso` → `concluso`
+- [ ] Ogni torneo appartiene a un anno scolastico (FR-6)
+- [ ] Un utente è in una sola squadra per torneo, imposto dal database
+- [ ] Typecheck passes
+
+### US-032: Creare e configurare un torneo
+
+**Description:** As Responsabile tornei or as GA organizer, I want to create a tournament and set its rules so that any sport can be organized.
+
+**Acceptance Criteria:**
+
+- [ ] Modulo: nome, sport, descrizione, regolamento (testo libero), modalità, giocatori per squadra, formato, tipo di punteggio, punti, durata partita, massimo squadre
+- [ ] Tipo di punteggio: `punti/gol` (due numeri) oppure `set` (al meglio di N set, risultato per ogni set)
+- [ ] Può creare un torneo il Responsabile tornei, e anche ogni Organizzatore GA (chi ha un'attività approvata) per la propria attività: il torneo resta collegato all'attività e il creatore ne diventa Organizzatore torneo, senza ulteriore approvazione
+- [ ] L'Organizzatore GA gestisce solo i tornei che ha creato (o a cui è stato aggiunto); il Responsabile tornei li vede e gestisce tutti
+- [ ] Può assegnare uno o più Organizzatori torneo e uno o più Arbitri (utenti registrati, cercati per nome o ID)
+- [ ] Può definire i campi/spazi del torneo (nome, es. "Palestra A", "Campo esterno")
+- [ ] Le impostazioni non si possono cambiare dopo la generazione del calendario, tranne nome, descrizione e regolamento
+- [ ] Il torneo in `bozza` non è visibile agli altri
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-033: Iscrizione di squadre e giocatori
+
+**Description:** As a student, I want to register my team (or myself) in a tournament so that I can play.
+
+**Acceptance Criteria:**
+
+- [ ] Elenco tornei con sport, stato, squadre iscritte e posti rimasti
+- [ ] Modalità squadre: il capitano crea la squadra (nome) e aggiunge i compagni cercandoli per nome o ID; il compagno conferma dal sito
+- [ ] Una squadra è valida solo con il numero di giocatori tra min e max; nome squadra unico nel torneo
+- [ ] Modalità singoli: l'utente si iscrive da solo
+- [ ] Un utente non può stare in due squadre dello stesso torneo; può stare in tornei diversi
+- [ ] Iscrizioni aperte solo in stato `iscrizioni`; fino alla chiusura la squadra si può modificare e ritirare
+- [ ] L'organizzatore può aggiungere, togliere o approvare squadre a mano
+- [ ] Oltre il massimo squadre: iscrizione rifiutata con messaggio chiaro, senza eccezioni
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-034: Formati e generazione del calendario
+
+**Description:** As an organizer, I want the site to generate the matches so that I don't draw the schedule by hand.
+
+**Acceptance Criteria:**
+
+- [ ] Formati: `girone all'italiana` (solo andata o andata e ritorno), `eliminazione diretta` (con turni di riposo se le squadre non sono potenze di 2), `gironi + eliminazione` (numero di gironi e qualificate per girone impostabili)
+- [ ] Sorteggio casuale delle squadre nei gironi/tabellone, oppure teste di serie scelte a mano
+- [ ] Anteprima del calendario prima di confermare; rigenerabile finché nessun risultato è stato inserito
+- [ ] Ogni squadra incontra le altre nel numero corretto di partite (verificato con un test per 3–16 squadre)
+- [ ] Le partite delle fasi a eliminazione successive si creano vuote e si riempiono da sole (US-037)
+- [ ] Alla conferma lo stato passa a `in corso`
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-035: Campi, orari e arbitri delle partite
+
+**Description:** As an organizer, I want to assign each match a field, a time and a referee so that the tournament runs without clashes.
+
+**Acceptance Criteria:**
+
+- [ ] Assegnazione automatica di campo e orario partendo da una data/ora di inizio, dalla durata partita e da una pausa tra partite
+- [ ] Modifica manuale di campo, data, ora e arbitro di ogni partita
+- [ ] Il sito blocca: due partite sullo stesso campo in orari sovrapposti, una squadra o un arbitro in due partite contemporanee
+- [ ] Gli orari di un torneo non sono legati alle date GA; un avviso (non un blocco) segnala se una squadra ha anche un'attività GA nello stesso orario
+- [ ] Partita rinviata: nuovo orario con motivo, la squadra vede la modifica
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-036: Inserire i risultati
+
+**Description:** As a referee or organizer, I want to enter match results so that standings update by themselves.
+
+**Acceptance Criteria:**
+
+- [ ] Solo l'arbitro della partita e gli Organizzatori del torneo possono inserire/correggere il risultato (i capitani e i giocatori non possono, nemmeno con conferma dell'avversario)
+- [ ] Punteggio semplice o per set, secondo il tipo di punteggio del torneo; stato partita: `da giocare`, `in corso`, `finita`
+- [ ] Forfait (vittoria a tavolino con punteggio configurabile) e partita annullata
+- [ ] Nelle partite a eliminazione il pareggio non è ammesso: si indica il vincitore (supplementari/rigori) con nota
+- [ ] Ogni correzione è registrata (chi, quando, valore precedente)
+- [ ] Facoltativo: eventi di partita per giocatore (gol/punti, cartellini) per la classifica marcatori
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-037: Classifica e tabellone automatici
+
+**Description:** As a participant, I want standings and bracket that update live so that I always know where my team stands.
+
+**Acceptance Criteria:**
+
+- [ ] Classifica dei gironi: punti, partite giocate, vinte/pareggiate/perse, differenza reti/set, calcolata dai risultati
+- [ ] Criteri di spareggio impostabili nel torneo, in ordine (punti, scontro diretto, differenza reti, gol fatti, sorteggio)
+- [ ] Tabellone a eliminazione: il vincitore avanza da solo al turno successivo; correggere un risultato aggiorna i turni seguenti (o blocca se il turno seguente è già stato giocato, con avviso)
+- [ ] Qualificate dai gironi inserite da sole nella fase a eliminazione a gironi conclusi
+- [ ] Classifica marcatori se sono stati registrati eventi
+- [ ] Aggiornamento in tempo reale su tutte le pagine aperte (come FR-9)
+- [ ] Test con dati di esempio: classifica e avanzamenti corretti, spareggi inclusi
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-038: Pagine del torneo e "le mie partite"
+
+**Description:** As a user, I want to follow a tournament and see my own matches so that I show up at the right place and time.
+
+**Acceptance Criteria:**
+
+- [ ] Pagina torneo: regolamento, squadre, calendario (filtri per giorno, campo, squadra), classifiche, tabellone, risultati
+- [ ] "Le mie partite": prossime partite dell'utente (campo, ora, avversario, arbitro) in Home e nel menu
+- [ ] Partite in corso evidenziate; vista leggibile da telefono (400px) e utilizzabile da proiettore (schermo intero senza menu)
+- [ ] Tutti gli utenti loggati vedono i tornei non in `bozza`
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-039: Esportazioni, stampa e archivio tornei
+
+**Description:** As Responsabile tornei or tournament organizer, I want to export and archive tournaments so that results are kept and the next year starts easily.
+
+**Acceptance Criteria:**
+
+- [ ] Export CSV/XLSX di squadre, calendario, risultati, classifiche, marcatori
+- [ ] Stampa pulita (CSS di stampa) di calendario e tabellone
+- [ ] "Duplica torneo" da un anno precedente: copia regolamento, formato, punteggio e campi, senza squadre né partite
+- [ ] I tornei conclusi restano consultabili in archivio, separati per anno scolastico (FR-6)
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
 ## 5. Requisiti funzionali
 
-- FR-1: Solo chi è nell'elenco ID (allievi) e conosce il codice generale, oppure chi ha un link d'invito (docenti e relatori), può registrarsi; il tipo di utente è deciso da questo canale, mai scelto a mano.
+- FR-1: Solo chi ha un indirizzo scolastico, è nell'elenco ID (se caricato) e conosce il codice generale (allievi), oppure chi ha un link d'invito (docenti e relatori), può registrarsi; il tipo di utente è deciso da questo canale, mai scelto a mano.
 - FR-2: Il codice personale è inviato all'indirizzo ID per e-mail; la password si sceglie solo dopo averlo inserito.
 - FR-3: Le password e i codici sono salvati solo come hash.
 - FR-4: Il sito invia mail solo per codice personale e recupero password.
@@ -433,6 +575,10 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - FR-11: Solo il Responsabile GA approva le attività; la Direzione approva fuori dal sito.
 - FR-12: Blocchi orari, date e anno corrente sono modificabili dal sito.
 - FR-13: Esportazioni in CSV e XLSX filtrabili.
+- FR-14: Un torneo è indipendente da GA, date e blocchi orari; lo sport è un'etichetta, il comportamento dipende da formato e tipo di punteggio.
+- FR-15: Un utente è in una sola squadra per torneo; nessuna sovrapposizione di campo, squadra o arbitro nello stesso orario.
+- FR-16: Classifiche e tabelloni si calcolano solo dai risultati inseriti e si aggiornano in tempo reale.
+- FR-17: Date GA, elenco ID e numero di allievi sono facoltativi: il sito funziona senza.
 
 ## 6. Non-goals (fuori ambito)
 
@@ -440,7 +586,8 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - Chat di qualunque tipo.
 - Invio automatico di mail diverse da codice personale e recupero password (promemoria, avvisi, mail ai relatori: le manda Claude via Claude in Chrome su richiesta).
 - Lettura automatica delle caselle Outlook (GA, Eco, Assemblea) e estrazione dati dalle mail.
-- Torneo di calcio (fase successiva) e gestione di info point e buvette.
+- Gestione di info point e buvette.
+- Pagamenti o quote d'iscrizione ai tornei, premi, streaming delle partite.
 - Pagamenti, API a pagamento, intelligenza artificiale esterna.
 
 ## 7. Design
@@ -467,9 +614,10 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 
 ## 10. Domande aperte
 
-- Date delle GA e blocchi orari definitivi (Yasser decide dopo le 17 del 15.10).
-- Elenco ID allievi (Yasser lo fornisce più avanti).
+Non bloccano lo sviluppo (si inseriscono dal sito quando sono note): date GA e blocchi orari definitivi · elenco ID allievi · numero allievi.
+
 - Indirizzi dei tre account Outlook e quale usare per l'invio dei codici.
 - Nome definitivo del sito.
 - Lettura delle mail ricevute dalle caselle (rimandata): serve davvero?
 - Dove ospitare il sito (Infomaniak non confermato) e tipo di server: deve accettare Docker.
+- Tornei: chi può diventare Responsabile tornei.
