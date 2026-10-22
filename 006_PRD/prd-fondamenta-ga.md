@@ -53,14 +53,16 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Test: due ruoli assegnati allo stesso utente vengono entrambi restituiti
 - [ ] Typecheck passes
 
-### US-003: Invio e-mail (solo codici)
+### US-003: Invio e-mail (codici e apertura iscrizioni)
 
-**Description:** As a developer, I need a mail module so that the site can send exactly two kinds of mail: personal code and password recovery.
+**Description:** As a developer, I need a mail module so that the site can send exactly three kinds of mail: personal code, password recovery and the enrollment-opening notice.
 
 **Acceptance Criteria:**
 
 - [ ] Invio via SMTP con credenziali nelle variabili d'ambiente (nessuna credenziale nel codice)
-- [ ] Il modulo espone solo `sendPersonalCode` e `sendPasswordReset`
+- [ ] Il modulo espone solo `sendPersonalCode`, `sendPasswordReset` e `sendEnrollmentOpen`
+- [ ] `sendEnrollmentOpen` scrive a tutti gli allievi e docenti registrati, in copia nascosta e a lotti; numero di destinatari per mail e massimo giornaliero in variabili d'ambiente (limiti del fornitore SMTP)
+- [ ] Gli invii a lotti stanno in una coda nel database: se il limite giornaliero è raggiunto riprendono da soli il giorno dopo; registro di chi ha ricevuto e degli errori, visibile al Responsabile GA
 - [ ] In sviluppo/test le mail vanno su un trasporto finto che le salva (nessun invio reale)
 - [ ] Errore SMTP: l'azione chiamante riceve un errore chiaro e nessun codice resta valido senza essere stato inviato
 - [ ] Typecheck passes
@@ -194,7 +196,8 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Elenco di blocchi orari modificabili (nome, inizio, fine) e date delle GA (anche "da definire")
 - [ ] Modifica di un blocco aggiorna subito tutte le pagine che lo mostrano
 - [ ] Le date GA possono restare "da definire": nessuna funzione del sito dipende dalle date, tutto funziona anche senza
-- [ ] Valori iniziali: 8:30–10:00, 10:15–11:45, 12:45–14:15, 14:30–16:00 (modificabili)
+- [ ] Valori iniziali (orari definitivi decisi alla riunione GA del 22.10): 8:30–10:00, pausa, 10:15–11:45, pranzo 11:45–12:45, 12:45–14:15, pausa, 14:30–16:00 (modificabili)
+- [ ] QR code dell'indirizzo del sito, generato dal sito (nessun servizio esterno) e scaricabile come immagine, da mostrare nelle classi per registrarsi
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
@@ -206,8 +209,9 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 
 **Acceptance Criteria:**
 
-- [ ] Tabelle: `rooms`, `activities` (titolo, descrizione, organizzatore, contatto, aula, giorno, blocco/i, min, max, stato: proposta/approvata/rifiutata, anno), `activity_blocks`, `enrollments`
-- [ ] Vincolo del database: un utente ha al massimo una iscrizione per blocco e giorno
+- [ ] Tabelle: `rooms`, `activities` (titolo, descrizione, organizzatore, contatto, aula, durata in blocchi consecutivi, numero di ripetizioni 1 o 2, blocco di prima scelta, blocco di seconda scelta, materiali richiesti, min, max, stato: proposta/approvata/rifiutata, anno), `activity_sessions` (una riga per ogni volta che l'attività si svolge: giorno, blocco di inizio, numero di blocchi), `enrollments` (su una sessione)
+- [ ] Vincolo del database: un utente ha al massimo una iscrizione per blocco e giorno, contando tutti i blocchi occupati da una sessione lunga
+- [ ] Un utente si iscrive a una sola sessione della stessa attività (se è ripetuta)
 - [ ] Ogni attività e iscrizione ha `school_year_id`
 - [ ] Migrazione applicata sul database di test
 - [ ] Typecheck passes
@@ -243,8 +247,13 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 
 **Acceptance Criteria:**
 
-- [ ] Modulo con: nome, organizzatore (precompilato), breve spiegazione, telefono (e-mail già nota), aula/spazio preferito con le aule libere indicate, uno o più blocchi, giorno, minimo e massimo di allievi
-- [ ] Controllo: minimo ≤ massimo, almeno un blocco, campi obbligatori compilati
+- [ ] Modulo con: nome, organizzatore (precompilato), breve spiegazione, telefono (e-mail già nota), aula/spazio preferito con le aule libere indicate, giorno, minimo e massimo di allievi
+- [ ] Gli orari dei blocchi sono scritti accanto alla scelta (es. "Blocco 1 · 8:30–10:00")
+- [ ] Blocco di **prima scelta** e blocco di **seconda scelta** (diversi tra loro), per non avere tutte le attività nello stesso blocco
+- [ ] Durata: uno o più blocchi consecutivi (es. un torneo di 3 ore occupa due blocchi)
+- [ ] "Ripeti l'attività": si può svolgere due volte, in due blocchi diversi, con iscritti diversi
+- [ ] Campo "Materiali che ti servono" (testo libero, es. proiettore, 10 sedie, palloni)
+- [ ] Controllo: minimo ≤ massimo, prima e seconda scelta diverse, durata che non attraversa il pranzo o la fine della giornata, campi obbligatori compilati
 - [ ] Dopo l'invio l'attività è in stato "proposta" e compare nella lista "da approvare" del Responsabile GA
 - [ ] Una proposta non è visibile agli altri allievi finché non è approvata
 - [ ] Typecheck passes
@@ -259,6 +268,8 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 - [ ] Lista "da approvare" con dettagli di ogni proposta
 - [ ] Azioni Approva / Rifiuta (con motivo opzionale); l'approvazione la rende visibile nell'elenco
 - [ ] Il Responsabile GA può modificare una proposta prima di approvarla
+- [ ] All'approvazione sceglie il blocco definitivo di ogni sessione (prima o seconda scelta, o un altro) vedendo per ogni blocco quante attività e quanti posti ci sono già
+- [ ] Lista dei materiali richiesti da tutte le attività approvate, esportabile
 - [ ] Il proponente vede lo stato della sua proposta nella pagina "La mia attività"
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
@@ -308,7 +319,9 @@ Ogni storia è piccola (una sessione di lavoro). Le fasi indicano l'ordine di co
 
 **Acceptance Criteria:**
 
+- [ ] Flusso: prima si raccolgono le proposte, poi il Responsabile GA guarda le attività approvate, poi apre le iscrizioni
 - [ ] Tre stati impostabili a mano: "Solo organizzatori", "Aperte a tutti", "Chiuse"
+- [ ] Pulsante "Apri le iscrizioni" per i Responsabili GA, con conferma: porta lo stato ad "Aperte a tutti" e avvia la mail di apertura a tutti gli allievi e docenti (US-003); la mail parte una sola volta per anno, un secondo invio richiede una conferma esplicita
 - [ ] Con "Solo organizzatori" si iscrivono solo utenti con almeno un'attività approvata; gli altri vedono un avviso
 - [ ] Con "Chiuse" nessuno si iscrive né annulla (tranne il Responsabile GA)
 - [ ] Lo stato attuale è visibile in Home
@@ -565,10 +578,11 @@ Un torneo è indipendente dalle GA: ci possono essere più tornei contemporanei,
 - FR-1: Solo chi ha un indirizzo scolastico, è nell'elenco ID (se caricato) e conosce il codice generale (allievi), oppure chi ha un link d'invito (docenti e relatori), può registrarsi; il tipo di utente è deciso da questo canale, mai scelto a mano.
 - FR-2: Il codice personale è inviato all'indirizzo ID per e-mail; la password si sceglie solo dopo averlo inserito.
 - FR-3: Le password e i codici sono salvati solo come hash.
-- FR-4: Il sito invia mail solo per codice personale e recupero password.
+- FR-4: Il sito invia mail solo per codice personale, recupero password e apertura delle iscrizioni (a tutti gli allievi e docenti, a lotti entro i limiti del fornitore).
 - FR-5: Ogni utente ha un ruolo base; gli altri ruoli aggiungono permessi; i permessi sono l'unione.
 - FR-6: Ogni attività, iscrizione e presenza appartiene a un anno scolastico e gli anni non si mischiano.
-- FR-7: Un utente può avere una sola attività per blocco e giorno, imposto dal database.
+- FR-7: Un utente può avere una sola attività per blocco e giorno, imposto dal database, anche per le attività lunghe più blocchi; una sola sessione per attività ripetuta.
+- FR-7b: Ogni proposta ha un blocco di prima e uno di seconda scelta; il Responsabile GA decide il blocco definitivo vedendo il carico di ogni blocco.
 - FR-8: Le iscrizioni hanno tre stati (solo organizzatori, tutti, chiuse) impostati a mano.
 - FR-9: I posti liberi si aggiornano in tempo reale su tutte le pagine aperte.
 - FR-10: L'assegnazione casuale non supera mai il massimo e non crea doppi impegni.
@@ -584,7 +598,7 @@ Un torneo è indipendente dalle GA: ci possono essere più tornei contemporanei,
 
 - Assemblea paritetica, Eco Comitato, sondaggi, bacheca, proposte anonime, festa di fine anno (PRD successivi).
 - Chat di qualunque tipo.
-- Invio automatico di mail diverse da codice personale e recupero password (promemoria, avvisi, mail ai relatori: le manda Claude via Claude in Chrome su richiesta).
+- Invio automatico di mail diverse da codice personale, recupero password e apertura iscrizioni (promemoria, avvisi, mail ai relatori: le manda Claude via Claude in Chrome su richiesta).
 - Lettura automatica delle caselle Outlook (GA, Eco, Assemblea) e estrazione dati dalle mail.
 - Gestione di info point e buvette.
 - Pagamenti o quote d'iscrizione ai tornei, premi, streaming delle partite.
@@ -600,7 +614,7 @@ Un torneo è indipendente dalle GA: ci possono essere più tornei contemporanei,
 
 - Node.js + TypeScript, PostgreSQL, container Docker. L'hosting non è deciso (Infomaniak è l'ipotesi): il progetto deve girare su qualunque server che accetta Docker, con tutta la configurazione (database, SMTP, indirizzo del sito) nelle variabili d'ambiente e nessun riferimento a un fornitore nel codice. Non va bene un hosting condiviso senza Docker/Node.
 - Tempo reale con SSE e Postgres LISTEN/NOTIFY.
-- Mail: SMTP verso un account Outlook dedicato con password per app (limite giornaliero di invio da tenere presente con ~330 registrazioni).
+- Mail: SMTP verso un account Outlook dedicato con password per app. Limiti di invio (destinatari per mail e al giorno) da verificare con l'account scelto: la mail di apertura iscrizioni va a ~330 allievi più i docenti, quindi va a lotti.
 - L'ID dell'allievo è il suo indirizzo e-mail scolastico (es. `ssl586@studenti.edu.ti.ch`).
 - Test: usare sempre il database di test locale, mai quello di produzione.
 - Privacy dei minorenni (nLPD): approvata e gestita dalla direzione; raccogliere solo i dati indicati in questo PRD.
@@ -616,7 +630,7 @@ Un torneo è indipendente dalle GA: ci possono essere più tornei contemporanei,
 
 Non bloccano lo sviluppo (si inseriscono dal sito quando sono note): date GA e blocchi orari definitivi · elenco ID allievi · numero allievi.
 
-- Indirizzi dei tre account Outlook e quale usare per l'invio dei codici.
+- Indirizzi dei tre account Outlook e quale usare per l'invio dei codici e della mail di apertura; limiti di invio reali di quell'account.
 - Nome definitivo del sito.
 - Lettura delle mail ricevute dalle caselle (rimandata): serve davvero?
 - Dove ospitare il sito (Infomaniak non confermato) e tipo di server: deve accettare Docker.
