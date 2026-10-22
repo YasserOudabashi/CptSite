@@ -9,6 +9,7 @@ Fase specifiche. Nessun codice. (Regola d'oro sull'analisi del sito Lilu2 rimoss
 - `GA/` — tabella proposte (`01._tabella-autogestite-finale-CSIA.xlsx`, ~215 righe), `Excel generale.xlsx` (orari + attività + numero allievi), `GA.docx` (to-do e attività).
 - `Assemblea/` — `PreAssemblea_2026-2027/` (temi riunione), `Seconda_Assemblea_2025-2026/` (argomenti, presenze, verbale 22.04, modello verbale).
 - `EcoComitato/` — `Verbali/` (31.03, 28.04, allegato Cittadinanza), `Sondaggi/` (SpazioAutogestito docx/xlsx/report, 100 risposte).
+- `Presentazione/` — PowerPoint per la riunione Eco del 23.10.2026 (come funziona il sito: GA, tornei, Eco). `EcoComitato/Spazio/` — Regolamento e Organigramma COMPILATI (proposte evidenziate in giallo). `Bozza_Sito/index.html` — bozza cliccabile con le pagine Eco.
 - `Docenti/` — documenti da dare ai docenti (domande su server, login, privacy).
 
 ## Dati chiave dai file

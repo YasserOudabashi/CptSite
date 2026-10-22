@@ -73,15 +73,18 @@ form.f .full{grid-column:1/-1}
 <div id="toast" class="toast" hidden></div>
 <script>
 const RUOLI={
- allievo:{n:"Allievo (ruolo base)",v:["home","gaelenco","miei","proponi","eco","sond"]},
- docente:{n:"Docente",v:["home","gaelenco","miei","proponi","eco","sond"]},
- org:{n:"Allievo che organizza un'attività",v:["home","gaelenco","miei","proponi","mia","eco","sond"]},
- rga:{n:"Allievo + Responsabile GA",v:["home","gaelenco","miei","proponi","gestga","eco","sond"]},
- reco:{n:"Allievo + Responsabile Eco Comitato",v:["home","gaelenco","miei","proponi","eco","gesteco","sond"]},
- ass:{n:"Allievo + Membro Assemblea",v:["home","gaelenco","miei","proponi","eco","ass","sond"]},
- sito:{n:"Responsabile sito (Yasser)",v:["home","gaelenco","miei","proponi","mia","gestga","eco","gesteco","ass","sond","admin"]}
+ allievo:{n:"Allievo (ruolo base)",v:["home","gaelenco","miei","proponi","eco","regol","sond"]},
+ docente:{n:"Docente",v:["home","gaelenco","miei","proponi","eco","regol","sond"]},
+ org:{n:"Allievo che organizza un'attività",v:["home","gaelenco","miei","proponi","mia","eco","regol","sond"]},
+ rga:{n:"Allievo + Responsabile GA",v:["home","gaelenco","miei","proponi","gestga","eco","regol","sond"]},
+ membro:{n:"Allievo + Membro Eco Comitato",v:["home","gaelenco","miei","proponi","eco","regol","turni","riunioni","sond"]},
+ gest:{n:"Allievo + Gestore di turno",v:["home","gaelenco","miei","proponi","eco","regol","turni","registro","sond"]},
+ reco:{n:"Allievo + Responsabile Eco Comitato",v:["home","gaelenco","miei","proponi","eco","gesteco","regol","turni","registro","riunioni","piano","sond"]},
+ adulto:{n:"Referente adulto (sola lettura)",v:["home","eco","regol","turni","registro","riunioni","piano","sond"]},
+ ass:{n:"Allievo + Membro Assemblea",v:["home","gaelenco","miei","proponi","eco","regol","ass","sond"]},
+ sito:{n:"Responsabile sito (Yasser)",v:["home","gaelenco","miei","proponi","mia","gestga","eco","gesteco","regol","turni","registro","riunioni","piano","ass","sond","admin"]}
 };
-const PAGE={home:"Home",gaelenco:"Attività GA",miei:"Il mio programma",proponi:"Proponi attività",mia:"La mia attività",gestga:"Gestione GA",eco:"Eco Comitato",gesteco:"Gestione Eco",ass:"Assemblea",sond:"Sondaggi",admin:"Amministrazione",accesso:"Accesso"};
+const PAGE={home:"Home",gaelenco:"Attività GA",miei:"Il mio programma",proponi:"Proponi attività",mia:"La mia attività",gestga:"Gestione GA",eco:"Spazio Eco",gesteco:"Gestione Eco",regol:"Regolamento",turni:"Organigramma e turni",registro:"Registro turno",riunioni:"Riunioni e verbali",piano:"Piano d'azione",ass:"Assemblea",sond:"Sondaggi",admin:"Amministrazione",accesso:"Accesso"};
 const BLOCCHI=["Blocco 1","Blocco 2","Blocco 3","Blocco 4"];
 let ATT=[
  {id:1,t:"Combattimento medievale",d:"Dimostrazione e prova pratica con spade di legno, a cura di un'associazione.",b:0,a:"Palestra",r:"Associazione esterna",tp:"Relatore",max:30,n:22},
@@ -94,6 +97,12 @@ let ATT=[
  {id:8,t:"Yoga e rilassamento",d:"Una sessione tranquilla prima del pranzo.",b:0,a:"Palestra 2",r:"Elena V. (4D)",tp:"Allievo",max:25,n:14}
 ];
 let DA_APPROVARE=[{t:"Laboratorio di scrittura creativa",o:"Sara M., 3B",b:"Blocco 2",a:"Aula 105"},{t:"Gioco da tavolo: Catan e altro",o:"Dani R., 2A",b:"Blocco 3",a:"Aula 210"}];
+const GEST=[["2 – 15 nov","Lorenzo T.","Ramon P.","Giulia S."],["16 – 29 nov","Sara M.","Dani R.","Elena V."],["30 nov – 13 dic","Luca T.","Marco B.","Lorenzo T."]];
+const MIN_GG=7;
+const REG=[["Finalità dello Spazio","Ambiente educativo-culturale per la comunità studentesca; non è un locale di ristoro né un'aula studio."],["Accesso e orari","Aperto a tutti gli allievi negli orari stabiliti dall'Eco Comitato; apre e chiude il gestore di turno."],["Attività consentite","Dibattiti, workshop, proiezioni con discussione, ospiti esterni, sensibilizzazione, altre iniziative approvate."],["Gestione e responsabilità","Gestione a rotazione da parte dei gestori di turno; il coordinatore Eco-Schools fa da raccordo con la direzione."],["Prenotazione dello Spazio","Ogni evento va proposto con almeno "+MIN_GG+" giorni di anticipo, indicando data, orario, responsabile e partecipanti."],["Cura dello spazio e del materiale","Si lascia lo Spazio come lo si è trovato; i danni si segnalano subito al gestore."],["Comportamento","Valgono le norme del CPT, più rispetto reciproco e ascolto."],["Violazioni e conseguenze","Il gestore può far lasciare il locale; l'Eco Comitato può sospendere l'accesso; le infrazioni gravi seguono le procedure dell'istituto."],["Modifiche al regolamento","Modificabile dall'Eco Comitato con discussione e approvazione a maggioranza."]];
+let ecoAtt=[{id:1,t:"Dibattito: la plastica a scuola",tp:"Dibattito",d:"Mer 4 nov · 12:45",max:30,n:14,pil:1},{id:2,t:"Workshop podcast",tp:"Workshop",d:"Mer 18 nov · 12:45",max:12,n:12,pil:1},{id:3,t:"Proiezione e discussione",tp:"Proiezione",d:"Mer 2 dic · 12:45",max:40,n:9,pil:0}];
+let ecoDaApp=[{t:"Incontro con un ospite: Samaritani",o:"Sara M., 3B",d:"Mer 9 dic · 12:45",mat:"Proiettore, 20 sedie"},{t:"Mercatino dei vestiti",o:"Classe I2B",d:"Ven 11 dic · 12:00",mat:"6 tavoli"}];
+let regApp=false, passo=[0,0,0,0], compiti={1:0,2:0,3:0}, votoE=null, rate=null, pdoc=["in corso","da fare","in corso","da fare","da fare","in corso"];
 let miei=new Set([3]), ecoIsc=new Set(), apertaGA=true, aulaAperta=true, presente=false, voto=null;
 let ruolo="allievo", pagina="home", fil={q:"",b:"",a:"",tp:""};
 const $=s=>document.querySelector(s);
@@ -117,6 +126,7 @@ accesso:()=>`<h2>Accesso</h2><p class="sub">Per entrare servono il tuo ID e il c
 home:()=>`<h2>Benvenuto</h2><p class="sub">Giornate Autogestite, Eco Comitato e Assemblea paritetica in un solo posto. Le attività sono proposte da allievi, docenti e relatori esterni; i posti si aggiornano in diretta.</p>
  <div class="grid"><div class="card"><span class="tag w">Date</span><p class="big">da definire</p><p class="meta">Le date vengono comunicate qui appena decise.</p></div>
  <div class="card"><span class="tag">Iscrizioni</span><p class="big">${apertaGA?"Aperte":"Chiuse"}</p><p class="meta">${ATT.length} attività disponibili</p><button class="btn" data-p="gaelenco">Vedi le attività</button></div>
+ <div class="card"><span class="tag ${aulaAperta?"":"w"}">Spazio Eco</span><p class="big">${aulaAperta?"Aperto":"Chiuso"}</p><p class="meta">Gestori di turno: ${GEST[0][1]}, ${GEST[0][2]}</p><button class="btn sec" data-p="eco">Apri</button></div>
  <div class="card"><span class="tag">Il mio programma</span><p class="big">${miei.size}</p><p class="meta">attività scelte finora</p><button class="btn sec" data-p="miei">Apri</button></div></div>
  <h3 style="margin:28px 0 10px">Sondaggio attivo</h3><div class="card"><p>Quali capi vanno permessi nel regolamento di abbigliamento?</p><button class="btn sec" data-p="sond" style="align-self:start">Vota</button></div>
  <h3 style="margin:28px 0 10px">Come funziona</h3><div class="steps"><div class="card"><p>Chi propone un'attività si iscrive per primo.</p></div><div class="card"><p>Scegli un'attività per ogni blocco orario.</p></div><div class="card"><p>Chi non si iscrive viene assegnato a un'attività a caso.</p></div></div>`,
@@ -152,22 +162,68 @@ gestga:()=>`<h2>Gestione GA</h2><p class="sub">Tutto quello che serve al Respons
  <div class="note" style="margin-bottom:16px">Presenze mancanti: Giulia S. (Cucina senza forno, Blocco 2).</div>
  <h3 style="margin-bottom:8px">Da approvare (${DA_APPROVARE.length})</h3><div class="stack">${DA_APPROVARE.map((x,i)=>`<div class="card"><div class="row sp"><div><h3>${esc(x.t)}</h3><p class="meta">${x.o} · ${x.b} · ${x.a}</p></div><button class="btn" data-a="approva" data-i="${i}">Approva</button></div></div>`).join("")||`<p class="meta">Niente da approvare.</p>`}</div>
  <h3 style="margin:24px 0 8px">Tutte le attività</h3><div class="tbl"><table><tr><th>Attività</th><th>Blocco</th><th>Aula</th><th>Iscritti</th></tr>${ATT.map(a=>`<tr><td>${esc(a.t)}</td><td>${BLOCCHI[a.b]}</td><td>${esc(a.a)}</td><td>${a.n}/${a.max}</td></tr>`).join("")}</table></div>`,
-eco:()=>`<h2>Eco Comitato</h2><p class="sub">L'aula dell'Eco Comitato: attività, materiali e posti.</p>
- <div class="card" style="margin-bottom:16px"><div class="row sp"><div><span class="tag ${aulaAperta?"":"w"}">Aula ${aulaAperta?"aperta":"chiusa"}</span><p class="meta" style="margin-top:6px">Orario abituale 8:00–18:00</p></div><button class="btn ${ecoIsc.has("a")?"sec":""}" data-a="ecoisc" data-id="a">${ecoIsc.has("a")?"Annulla iscrizione":"Iscriviti all'aula"}</button></div></div>
- <div class="grid">${[["Riparazione biciclette","Mer 12:30","Lorenzo T.",8],["Orto in cortile","Gio 13:00","Ramon P.",10],["Mercatino dei vestiti","Ven 12:00","Classe I2B",15]].map((x,i)=>`<article class="card"><span class="tag b">${x[1]}</span><h3>${x[0]}</h3><p class="meta">${x[2]} · max ${x[3]} persone</p><button class="btn ${ecoIsc.has(i)?"sec":""}" data-a="ecoisc" data-id="${i}">${ecoIsc.has(i)?"Annulla iscrizione":"Iscriviti"}</button></article>`).join("")}</div>
- <p class="meta" style="margin-top:14px">Vuoi proporre un'attività o chiedere materiali? <button class="btn sec" data-a="toast" data-m="Esempio: la proposta passa da Ramon per l'approvazione">Proponi</button></p>
- <p class="meta" style="margin-top:10px">Le 7 fasi di Eco-Schools si seguono su <a href="https://app.ecoschools-ch.org" target="_blank" rel="noopener">app.ecoschools-ch.org</a>.</p>`,
+eco:()=>{const ro=ruolo==="adulto";return `<h2>Spazio Eco</h2><p class="sub">L'aula del progetto Cittadinanza (nome da definire): stato, attività e proposte.</p>
+ <div class="grid" style="margin-bottom:16px"><div class="card"><span class="tag ${aulaAperta?"":"w"}">Aula ${aulaAperta?"aperta":"chiusa"}</span><p class="meta">Orario abituale 12:30–14:00 · deciso dall'Eco Comitato</p><p class="meta">Gestori di turno: <b>${GEST[0][1]}</b> e <b>${GEST[0][2]}</b> (${GEST[0][0]})</p></div>
+ <div class="card"><span class="tag b">Regole</span><p class="meta">Regolamento d'uso ${regApp?"approvato":"in bozza"}.</p><button class="btn sec" data-p="regol">Leggi il regolamento</button></div></div>
+ <h3 style="margin-bottom:8px">Prossime attività</h3>
+ <div class="grid">${ecoAtt.map(a=>{const io=ecoIsc.has(a.id);const pie=a.n>=a.max&&!io;return `<article class="card"><div class="row sp"><span class="tag b">${a.d}</span>${a.pil?`<span class="tag w">Pilota</span>`:""}</div><h3>${esc(a.t)}</h3>${barra(a)}<div class="row sp"><span class="meta">${pie?"Posti esauriti":(a.max-a.n)+" posti liberi su "+a.max}</span>${ro?"":`<button class="btn ${pie?"off":io?"sec":""}" data-a="ecoisc" data-id="${a.id}">${io?"Annulla":"Iscriviti"}</button>`}</div></article>`}).join("")}
+ <article class="card"><span class="tag b">Concluso · Mer 21 ott</span><h3>Riparazione biciclette</h3><p class="meta">Com'è andata? (questionario breve, solo per chi era iscritto)</p><div class="row">${[1,2,3,4,5].map(n=>`<button class="btn ${rate===n?"":"sec"}" data-a="rate" data-n="${n}" style="min-width:42px;padding:6px 0">${n}</button>`).join("")}</div>${rate?`<p class="meta">Grazie: risposta anonima registrata (esempio).</p>`:""}</article></div>
+ ${ro?"":`<h3 style="margin:28px 0 8px">Proponi un evento</h3><p class="meta" style="margin-bottom:10px">Serve almeno ${MIN_GG} giorni di anticipo (art. 5). Il Responsabile Attività approva, modifica o respinge, sempre con un motivo.</p>
+ <form class="f" id="fev"><label>Titolo<input type="text" name="t" required></label><label>Tipo<select name="tp"><option>Dibattito</option><option>Workshop</option><option>Proiezione con discussione</option><option>Ospite esterno</option><option>Sensibilizzazione</option><option>Altro</option></select></label>
+ <label>Data<input type="text" name="d" placeholder="aaaa-mm-gg" required></label><label>Partecipanti previsti / tetto<span class="row"><input type="number" value="15" style="width:80px"><input type="number" value="25" style="width:80px"></span></label>
+ <label>Materiali richiesti<input type="text" name="m" placeholder="es. proiettore, 10 sedie"></label><label class="switch" style="flex-direction:row;align-self:end"><input type="checkbox"> Attività pilota</label>
+ <div class="full"><button class="btn" type="submit">Invia la proposta</button></div></form>`}
+ <p class="meta" style="margin-top:18px">Le 7 fasi di Eco-Schools si seguono su <a href="https://app.ecoschools-ch.org" target="_blank" rel="noopener">app.ecoschools-ch.org</a>.</p>`},
+regol:()=>`<h2>Regolamento d'uso dello Spazio</h2><p class="sub"><span class="tag ${regApp?"":"w"}">${regApp?"Approvato dall'Eco Comitato · versione 1":"Bozza · versione 1"}</span> ${regApp?"":"Gli utenti vedono solo la versione approvata; i membri Eco possono lasciare osservazioni per articolo."}</p>
+ <div class="stack">${REG.map((r,i)=>`<div class="card"><h3>Art. ${i+1} · ${r[0]}</h3><p>${r[1]}</p>${ruolo==="adulto"||regApp?"":`<button class="btn sec" style="align-self:start" data-a="toast" data-m="Esempio: osservazione registrata sull'articolo ${i+1}">Aggiungi osservazione</button>`}</div>`).join("")}</div>
+ ${(ruolo==="reco"||ruolo==="sito")&&!regApp?`<div class="row" style="margin-top:16px"><button class="btn" data-a="regapp">Segna come approvato (a maggioranza)</button></div>`:""}
+ ${regApp?`<div class="note" style="margin-top:16px">Per modificare un regolamento approvato si crea una nuova bozza: questa versione resta in vigore finché la nuova non è approvata. Storico delle versioni consultabile.</div>`:""}`,
+turni:()=>`<h2>Organigramma e turni</h2><p class="sub">Tre livelli: chi gestisce, chi decide, chi fa da raccordo con la direzione.</p>
+ <div class="grid" style="margin-bottom:20px"><div class="card"><span class="tag">Gestori di turno</span><p>2–3 studenti dell'Eco Comitato, a rotazione.</p><p class="meta">Aprono e chiudono, controllano i locali, segnalano le anomalie, fanno il passaggio di consegne.</p></div>
+ <div class="card"><span class="tag">Eco Comitato</span><p>Tutti i membri, studenti e adulti.</p><p class="meta">Organo decisionale: approva attività, calendario e modifiche al regolamento. Responsabili: Aula (Lorenzo), Attività (Ramon), Comunicazione (Yasser).</p></div>
+ <div class="card"><span class="tag b">Referente adulto</span><p>Il coordinatore Eco-Schools.</p><p class="meta">Raccordo con la direzione: supervisione, non gestione. Sul sito vede tutto in sola lettura.</p></div></div>
+ <h3 style="margin-bottom:8px">Piano di rotazione (turni di 2 settimane)</h3><div class="tbl"><table><tr><th>Periodo</th><th>Gestore 1</th><th>Gestore 2</th><th>Sostituto</th></tr>${GEST.map((g,i)=>`<tr ${i===0?'style="font-weight:600"':""}><td>${g[0]}${i===0?` <span class="tag">in corso</span>`:""}</td><td>${g[1]}</td><td>${g[2]}</td><td>${g[3]}</td></tr>`).join("")}</table></div>
+ <p class="meta" style="margin-top:8px">Dati di esempio. Il sito non permette due turni sovrapposti alla stessa persona e avvisa se manca il sostituto. Il ruolo di gestore vale solo nel periodo del turno.</p>`,
+registro:()=>{const ro=ruolo==="adulto";const L=["Ispezione congiunta dello Spazio (arredi, materiale, pulizia)","Registro di passaggio compilato","Consegna delle chiavi o del badge","Comunicazione al gruppo dell'avvenuto passaggio"];
+ return `<h2>Registro del turno</h2><p class="sub">Turno in corso: ${GEST[0][0]} · ${GEST[0][1]} e ${GEST[0][2]}</p>
+ <div class="grid"><div class="card"><span class="tag">Stato del locale</span>${["Arredi","Materiale","Pulizia"].map(x=>`<div class="row sp"><span>${x}</span><select ${ro?"disabled":""}><option>Ok</option><option>Problema</option></select></div>`).join("")}${ro?"":`<textarea placeholder="Note e segnalazioni"></textarea><button class="btn sec" data-a="toast" data-m="Esempio: segnalazione inviata al Responsabile Eco" style="align-self:start">Segnala un'anomalia</button>`}</div>
+ <div class="card"><span class="tag">Passaggio di consegne</span>${L.map((x,i)=>`<label class="switch" style="flex-direction:row;color:var(--ink)"><input type="checkbox" data-a="passo" data-i="${i}" ${passo[i]?"checked":""} ${ro?"disabled":""}> ${x}</label>`).join("")}<p class="meta">${passo.every(Boolean)?"Passaggio completato: il turno si chiude.":"Il passaggio si chiude solo con tutte le spunte, di gestore uscente e subentrante."}</p></div></div>
+ <h3 style="margin:24px 0 8px">Segnalazioni aperte portate al prossimo turno</h3><div class="card"><p class="meta">1 · Sedia rotta (Aula 301), segnalata da Lorenzo T. · aperta</p></div>`},
 gesteco:()=>`<h2>Gestione Eco Comitato</h2><p class="sub">Tre responsabili, ognuno con il suo compito.</p>
  <div class="grid"><div class="card"><span class="tag">Aula · Lorenzo</span><label class="switch"><input type="checkbox" id="swa" ${aulaAperta?"checked":""}> Aula ${aulaAperta?"aperta":"chiusa"} (a mano)</label><p class="meta">Calendario: giorni, orari e periodi di chiusura.</p></div>
- <div class="card"><span class="tag">Attività · Ramon</span><p>Da approvare: 1</p><p class="meta">Orto in cortile: richiede 3 vasi e terriccio.</p><button class="btn" data-a="toast" data-m="Esempio: approvata">Approva</button></div>
- <div class="card"><span class="tag">Comunicazione · Yasser</span><p class="meta">Messaggi a docenti e direzione.</p></div></div>
- <h3 style="margin:24px 0 8px">Materiali disponibili</h3><div class="tbl"><table><tr><th>Materiale</th><th>Quantità</th></tr><tr><td>Vasi</td><td>12</td></tr><tr><td>Attrezzi da giardino</td><td>6</td></tr><tr><td>Kit riparazione bici</td><td>2</td></tr></table></div>
- <h3 style="margin:24px 0 8px">File condivisi tra i responsabili</h3><div class="card"><p class="meta">verbale_28.04.docx · allegato_cittadinanza.docx</p></div>`,
+ <div class="card"><span class="tag">Comunicazione · Yasser</span><p class="meta">Messaggi a docenti e direzione, sondaggi e restituzione dei risultati.</p></div></div>
+ <h3 style="margin:24px 0 8px">Attività da approvare (${ecoDaApp.length}) · Ramon</h3>
+ <div class="stack">${ecoDaApp.map((x,i)=>`<div class="card"><div><h3>${esc(x.t)}</h3><p class="meta">${x.o} · ${x.d} · materiali: ${x.mat}</p></div><textarea id="mot${i}" placeholder="Motivo (obbligatorio se modifichi o respingi)" style="min-height:50px"></textarea><div class="row"><button class="btn" data-a="ecoappr" data-i="${i}">Approva</button><button class="btn sec" data-a="ecorif" data-i="${i}">Respingi</button></div></div>`).join("")||`<p class="meta">Niente da approvare.</p>`}</div>
+ <h3 style="margin:24px 0 8px">Lista materiali</h3><div class="tbl"><table><tr><th>Materiale</th><th>Per</th><th>Stato</th></tr><tr><td>Proiettore</td><td>Ospite Samaritani</td><td><span class="tag">Disponibile</span></td></tr><tr><td>6 tavoli</td><td>Mercatino</td><td><span class="tag w">Richiesto</span></td></tr><tr><td>20 sedie</td><td>Ospite Samaritani</td><td><span class="tag b">Non disponibile</span></td></tr></table></div>
+ <h3 style="margin:24px 0 8px">Valutazioni</h3><div class="card"><p>Riparazione biciclette: 11 iscritti · 10 presenti · soddisfazione media <b>4,3 / 5</b></p><p class="meta">Le risposte sono anonime per chi organizza.</p></div>
+ <h3 style="margin:24px 0 8px">Segnalazioni su persone</h3><div class="card"><p class="meta">Visibili solo a Responsabile Eco, Responsabile sito e Referente adulto. Sospensione temporanea con data di fine e motivo.</p><button class="btn sec" style="align-self:start" data-a="toast" data-m="Esempio: nessuna segnalazione aperta">Apri l'elenco</button></div>`,
+riunioni:()=>{const T=[["Presentare i ruoli e la bozza del sito","Yasser","23.10"],["Bozza del sondaggio","Marco D.","23.10"],["Regolamento dell'aula","Ramon, Lorenzo","23.10"]];
+ return `<h2>Riunioni e verbali</h2><p class="sub">Riunione n. 1 · 23 ottobre 2026 · verbalista a rotazione: <b>Sara M.</b> (prossimo: Dani R.)</p>
+ <div class="grid"><div class="card"><span class="tag">Ordine del giorno</span><p class="meta">1. Check-point con J'aime ma Planète<br>2. Ruoli e bozza del sito<br>3. Regolamento e organigramma<br>4. Sondaggio<br>5. Nome dello Spazio</p></div>
+ <div class="card"><span class="tag">Presenze</span><p class="meta">Docenti 1 · Allievi 9 · Direzione 0 · Scusati 2</p></div></div>
+ <h3 style="margin:24px 0 8px">Verbale (righe I / C / D / E)</h3><div class="tbl"><table><tr><th></th><th>Testo</th><th>Chi</th><th>Termine</th></tr>
+ <tr><td><span class="tag b">I</span></td><td>Lo Spazio è pronto e attrezzato.</td><td></td><td></td></tr>
+ <tr><td><span class="tag">D</span></td><td>Il regolamento si discute articolo per articolo.</td><td></td><td></td></tr>
+ <tr><td><span class="tag w">C</span></td><td>Preparare la bozza del sondaggio.</td><td>Marco D.</td><td>prossima riunione</td></tr>
+ <tr><td><span class="tag b">E</span></td><td>Proposta di nome: da ricontrollare.</td><td></td><td></td></tr></table></div>
+ <p class="meta" style="margin-top:8px">Dati di esempio. Il ruolo numerato di ogni membro si segna a ogni riunione.</p>
+ <h3 style="margin:24px 0 8px">I miei compiti</h3><div class="stack">${T.map((x,i)=>`<label class="card switch" style="flex-direction:row;justify-content:space-between;color:var(--ink)"><span>${x[0]}<span class="meta"> · ${x[1]} · entro ${x[2]}</span></span><input type="checkbox" data-a="compito" data-i="${i+1}" ${compiti[i+1]?"checked":""}></label>`).join("")}</div>`},
+piano:()=>{const D=[["Regolamento d'uso","Ramon, Lorenzo"],["Organigramma e rotazione","Yasser"],["Sondaggio","Marco D."],["Piano delle attività pilota","da assegnare"],["Documento di comunicazione","da assegnare"],["Piano d'azione sulla piattaforma","Yasser"]];
+ return `<h2>Piano d'azione Eco-Schools</h2><p class="sub">I documenti del piano: ciò che si produce qui finisce nei campi dei passi 2 e 3 della piattaforma.</p>
+ <div class="grid" style="margin-bottom:16px"><div class="card"><span class="tag w">Check-point</span><p class="big">23 ott</p><p class="meta">con J'aime ma Planète</p></div><div class="card"><span class="tag">Attuazione</span><p class="big">7.9 – 16.6</p><p class="meta">dal 7 settembre 2026 al 16 giugno 2027</p></div></div>
+ <div class="tbl"><table><tr><th>Documento</th><th>Responsabile</th><th>Stato</th></tr>${D.map((d,i)=>`<tr><td>${d[0]}</td><td>${d[1]}</td><td><select data-a="pdoc" data-i="${i}" ${ruolo==="adulto"?"disabled":""}>${["da fare","in corso","consegnato","inserito in piattaforma"].map(o=>`<option ${pdoc[i]===o?"selected":""}>${o}</option>`).join("")}</select></td></tr>`).join("")}</table></div>
+ <p class="meta" style="margin-top:10px">Il sito tiene traccia dei documenti; la piattaforma <a href="https://app.ecoschools-ch.org" target="_blank" rel="noopener">app.ecoschools-ch.org</a> si compila a mano.</p>`},
+
 ass:()=>`<h2>Assemblea paritetica</h2><p class="sub">Solo per i membri dell'Assemblea.</p>
  <div class="grid"><div class="card"><span class="tag">Prossima assemblea</span><p class="big">da fissare</p><label class="switch"><input type="checkbox" id="swp" ${presente?"checked":""}> Sarò presente</label></div>
  <div class="card"><span class="tag">Verbali</span><p><a href="#" data-a="toast" data-m="Esempio: nessun file">Verbale 06.10.2026</a></p><p><a href="#" data-a="toast" data-m="Esempio: nessun file">Verbale 22.04.2026</a></p></div></div>`,
 sond:()=>{const o=["Berretti","Pantaloncini corti","Infradito","Canotte"];const v=[41,28,12,19];
- return `<h2>Sondaggi</h2><p class="sub">Vota, poi vedi i risultati.</p><div class="card"><h3>Quali capi vanno permessi nel regolamento di abbigliamento?</h3>
+ const sc=["Un dibattito su un tema d'attualità","Un workshop pratico (foto, podcast, riparazione)","Una proiezione seguita da discussione","Un incontro con un ospite esterno","Altro (specificare)"],sv=[22,31,18,24,5];
+ return `<h2>Sondaggi</h2><p class="sub">Vota, poi vedi i risultati. Le risposte sono anonime.</p>
+ <div class="card" style="margin-bottom:16px"><span class="tag">Spazio Eco</span><h3>Se lo Spazio ospitasse un evento al mese, quale preferiresti?</h3>
+ ${sc.map((x,i)=>`<div class="row sp"><button class="btn ${votoE===i?"":"sec"}" data-a="votoe" data-i="${i}" style="min-width:260px;text-align:left">${x}</button><div style="flex:1;min-width:120px"><div class="bar"><i style="width:${sv[i]+(votoE===i?3:0)}%"></i></div></div><span class="meta">${votoE!==null?sv[i]+(votoE===i?1:0)+"%":"?"}</span></div>`).join("")}
+ ${votoE===4?`<input type="text" placeholder="Specifica la tua idea">`:""}${votoE===null?"":`<p class="meta">Grazie, risposta registrata (esempio, dati inventati). Bozza di Marco Del Core.</p>`}</div>
+ <div class="card"><h3>Quali capi vanno permessi nel regolamento di abbigliamento?</h3>
  ${o.map((x,i)=>`<div class="row sp"><button class="btn ${voto===i?"":"sec"}" data-a="vota" data-i="${i}" style="min-width:170px">${x}</button><div style="flex:1;min-width:120px"><div class="bar"><i style="width:${v[i]+(voto===i?4:0)}%"></i></div></div><span class="meta">${voto!==null?v[i]+(voto===i?1:0):"?"}</span></div>`).join("")}
  ${voto===null?"":`<p class="meta">Grazie, il tuo voto è registrato (esempio).</p>`}</div>`},
 admin:()=>`<h2>Amministrazione</h2><p class="sub">Solo il Responsabile sito.</p>
@@ -182,7 +238,7 @@ admin:()=>`<h2>Amministrazione</h2><p class="sub">Solo il Responsabile sito.</p>
 function render(){
  const v=RUOLI[ruolo].v; if(pagina!=="accesso"&&!v.includes(pagina))pagina="home";
  $("#nav").innerHTML=v.map(k=>`<button data-p="${k}" ${k===pagina?'aria-current="page"':""}>${PAGE[k]}</button>`).join("")+`<button data-p="accesso" ${pagina==="accesso"?'aria-current="page"':""} style="margin-left:auto">Accesso</button>`;
- $("#main").innerHTML=P[pagina]();
+ $("#main").innerHTML=(ruolo==="adulto"?`<div class="note" style="margin-bottom:16px">Referente adulto: vedi tutto l'Eco Comitato in sola lettura (supervisione, non gestione).</div>`:"")+P[pagina]();
 }
 $("#ruolo").innerHTML=Object.entries(RUOLI).map(([k,r])=>`<option value="${k}">${r.n}</option>`).join("");
 $("#ruolo").onchange=e=>{ruolo=e.target.value;pagina="home";render()};
@@ -198,18 +254,33 @@ document.addEventListener("click",e=>{
   miei.add(id);x.n++;toast("Iscritto a «"+x.t+"»");render()}
  if(a==="disiscrivi"){miei.delete(id);ATT.find(z=>z.id===id).n--;render()}
  if(a==="approva"){const x=DA_APPROVARE.splice(+el.dataset.i,1)[0];ATT.push({id:ATT.length+1,t:x.t,d:"Proposta approvata.",b:BLOCCHI.indexOf(x.b),a:x.a,r:x.o,tp:"Allievo",max:15,n:0});toast("Approvata e pubblicata");render()}
- if(a==="ecoisc"){const k=el.dataset.id==="a"?"a":+el.dataset.id;ecoIsc.has(k)?ecoIsc.delete(k):ecoIsc.add(k);render()}
+ if(a==="ecoisc"){const k=el.dataset.id==="a"?"a":+el.dataset.id;const x=ecoAtt.find(z=>z.id===k);
+  if(ecoIsc.has(k)){ecoIsc.delete(k);if(x)x.n--}else{if(x&&x.n>=x.max)return toast("Posti esauriti");ecoIsc.add(k);if(x)x.n++}render()}
+ if(a==="ecoappr"){const x=ecoDaApp.splice(+el.dataset.i,1)[0];ecoAtt.push({id:ecoAtt.length+1,t:x.t,tp:"Altro",d:x.d,max:25,n:0,pil:0});toast("Approvata e pubblicata");render()}
+ if(a==="ecorif"){const m=$("#mot"+el.dataset.i).value.trim();if(!m)return toast("Il motivo è obbligatorio per respingere");ecoDaApp.splice(+el.dataset.i,1);toast("Respinta, motivo visibile al proponente");render()}
+ if(a==="regapp"){regApp=true;toast("Regolamento approvato (esempio)");render()}
+ if(a==="rate"){rate=+el.dataset.n;render()}
+ if(a==="votoe"){votoE=+el.dataset.i;render()}
  if(a==="vota"){voto=+el.dataset.i;render()}
 });
 document.addEventListener("input",e=>{
  const i=e.target.id; if(i==="fq"){fil.q=e.target.value;const p=e.target.selectionStart;render();const n=$("#fq");n.focus();n.setSelectionRange(p,p)}
 });
 document.addEventListener("change",e=>{
- const i=e.target.id,v=e.target.value;
+ const i=e.target.id,v=e.target.value,t=e.target.dataset;
+ if(t.a==="passo"){passo[+t.i]=e.target.checked?1:0;render();return}
+ if(t.a==="compito"){compiti[+t.i]=e.target.checked?1:0;return}
+ if(t.a==="pdoc"){pdoc[+t.i]=v;return}
  if(i==="tipo")$("#lcl").hidden=v!=="Allievo";
  if(i==="fb"){fil.b=v;render()} if(i==="fa"){fil.a=v;render()} if(i==="ft"){fil.tp=v;render()}
  if(i==="sw"){apertaGA=e.target.checked;render()} if(i==="swa"){aulaAperta=e.target.checked;render()} if(i==="swp"){presente=e.target.checked;toast(presente?"Presenza segnata":"Presenza tolta")}
 });
-document.addEventListener("submit",e=>{e.preventDefault();toast("Esempio: la proposta andrebbe al Responsabile GA")});
+document.addEventListener("submit",e=>{e.preventDefault();
+ if(e.target.id==="fev"){const f=new FormData(e.target),d=new Date(f.get("d"));
+  if(isNaN(d))return toast("Scrivi la data come aaaa-mm-gg");
+  if((d-new Date())/864e5<MIN_GG)return toast("Rifiutata: servono almeno "+MIN_GG+" giorni di anticipo (art. 5)");
+  if(!aulaAperta)return toast("L'aula è chiusa: scegli un'altra data");
+  ecoDaApp.push({t:f.get("t"),o:"Tu",d:f.get("d"),mat:f.get("m")||"nessuno"});toast("Proposta inviata: Ramon la valuterà");return}
+ toast("Esempio: la proposta andrebbe al Responsabile GA")});
 render();
 </script>
