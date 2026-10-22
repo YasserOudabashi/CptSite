@@ -282,5 +282,6 @@ document.addEventListener("submit",e=>{e.preventDefault();
   if(!aulaAperta)return toast("L'aula è chiusa: scegli un'altra data");
   ecoDaApp.push({t:f.get("t"),o:"Tu",d:f.get("d"),mat:f.get("m")||"nessuno"});toast("Proposta inviata: Ramon la valuterà");return}
  toast("Esempio: la proposta andrebbe al Responsabile GA")});
+{const h=location.hash.slice(1).split("/");if(h[2]==="l")document.documentElement.dataset.theme="light";if(RUOLI[h[0]]){ruolo=h[0];$("#ruolo").value=ruolo;if(RUOLI[ruolo].v.includes(h[1]))pagina=h[1]}}
 render();
 </script>
