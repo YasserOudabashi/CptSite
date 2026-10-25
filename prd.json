@@ -1,0 +1,696 @@
+{
+  "project": "Portale CPT Trevano",
+  "branchName": "ralph/fondamenta-ga",
+  "description": "Portale CPT Trevano: fondamenta (registrazione, login, ruoli, anni scolastici), Giornate Autogestite (attività, iscrizioni in tempo reale, presenze, export) e tornei. PRD: 006_PRD/prd-fondamenta-ga.md",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scheletro del progetto",
+      "description": "As a developer, I need a working project skeleton so that all other stories build on it.",
+      "acceptanceCriteria": [
+        "Progetto Node.js + TypeScript con un container Docker per l'app e uno per PostgreSQL (`docker compose up` avvia tutto)",
+        "Sistema di migrazioni del database che parte da zero",
+        "Database di test separato (mai quello di produzione) e comando unico `npm test`",
+        "Pagina `/` risponde 200",
+        "Typecheck/lint passes",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-002",
+      "title": "Schema utenti, ruoli e anni scolastici",
+      "description": "As a developer, I need the base tables so that every record belongs to a school year and users can have several roles.",
+      "acceptanceCriteria": [
+        "Tabelle: `school_years`, `users`, `roles`, `user_roles` (molti-a-molti), con ruoli iniziali: allievo, docente, relatore, resp_ga, resp_sito",
+        "Esattamente un anno scolastico marcato come \"corrente\"",
+        "Seed: anno 2026-2027 e un utente Responsabile sito",
+        "Test: due ruoli assegnati allo stesso utente vengono entrambi restituiti",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-003",
+      "title": "Invio e-mail (codici e apertura iscrizioni)",
+      "description": "As a developer, I need a mail module so that the site can send exactly three kinds of mail: personal code, password recovery and the enrollment-opening notice.",
+      "acceptanceCriteria": [
+        "Invio via SMTP con credenziali nelle variabili d'ambiente (nessuna credenziale nel codice)",
+        "Il modulo espone solo `sendPersonalCode`, `sendPasswordReset` e `sendEnrollmentOpen`",
+        "`sendEnrollmentOpen` scrive a tutti gli allievi e docenti registrati, in copia nascosta e a lotti; numero di destinatari per mail e massimo giornaliero in variabili d'ambiente (limiti del fornitore SMTP)",
+        "Gli invii a lotti stanno in una coda nel database: se il limite giornaliero è raggiunto riprendono da soli il giorno dopo; registro di chi ha ricevuto e degli errori, visibile al Responsabile GA",
+        "In sviluppo/test le mail vanno su un trasporto finto che le salva (nessun invio reale)",
+        "Errore SMTP: l'azione chiamante riceve un errore chiaro e nessun codice resta valido senza essere stato inviato",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-004",
+      "title": "Codice generale ed elenco ID allievi (opzionale)",
+      "description": "As Responsabile sito, I want to upload the list of valid student IDs and set the general code so that only real students can register, without blocking the site while the list is not yet available.",
+      "acceptanceCriteria": [
+        "Pagina admin con caricamento CSV (una riga per ID, es. `ssl586@studenti.edu.ti.ch`)",
+        "L'elenco è **facoltativo**: finché è vuoto, può registrarsi qualunque indirizzo del dominio scolastico (dominio in configurazione, es. `studenti.edu.ti.ch`) che conosce il codice generale; appena l'elenco è caricato, solo gli ID presenti",
+        "ID duplicati ignorati; riga non valida segnalata con numero di riga",
+        "Campo per impostare/cambiare il codice generale (salvato hashato)",
+        "L'elenco è legato all'anno scolastico corrente e si può caricare o aggiornare in qualunque momento, anche a iscrizioni già aperte (nessun allievo già registrato viene toccato)",
+        "Accessibile solo al Responsabile sito",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-005",
+      "title": "Registrazione, passo 1 (ID + codice generale)",
+      "description": "As a new student, I want to enter my ID, the general code, my name, surname and class so that I receive a personal code by e-mail.",
+      "acceptanceCriteria": [
+        "Campi: ID, codice generale, nome, cognome, classe (nessuna scelta del tipo: chi usa questa pagina è un Allievo)",
+        "ID fuori dal dominio scolastico, non presente nell'elenco (se caricato) o codice generale errato: messaggio d'errore generico, nessun dettaglio su quale dei due è sbagliato",
+        "Se valido: viene generato un codice personale casuale, salvato hashato con scadenza di 24 ore, e inviato all'indirizzo ID via e-mail",
+        "Un ID già registrato riceve il messaggio \"account già esistente, usa il recupero password\"",
+        "Limite di 5 tentativi per ora per ID e per IP",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-006",
+      "title": "Registrazione, passo 2 (codice personale + password)",
+      "description": "As a new user, I want to enter my personal code and choose a password so that my account becomes active.",
+      "acceptanceCriteria": [
+        "Il codice personale corretto e non scaduto permette di scegliere la password (minimo 10 caratteri, due campi uguali)",
+        "Password salvata con hash lento (argon2 o bcrypt), mai in chiaro nei log",
+        "Codice sbagliato/scaduto: errore e possibilità di richiedere un nuovo codice",
+        "Ruolo assegnato: Allievo",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-007",
+      "title": "Login e logout",
+      "description": "As a user, I want to log in with ID and password so that I can use the site.",
+      "acceptanceCriteria": [
+        "Login con ID + password, sessione in cookie `HttpOnly`, `Secure`, `SameSite=Lax`",
+        "Credenziali errate: messaggio generico; blocco temporaneo dopo 5 tentativi falliti",
+        "Logout termina la sessione sul server",
+        "Pagine protette reindirizzano al login se non autenticati",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-008",
+      "title": "Recupero password",
+      "description": "As a user who forgot the password, I want to reset it with a code sent by e-mail.",
+      "acceptanceCriteria": [
+        "Pagina \"Recupero password\": inserisci ID, ricevi un codice via e-mail (risposta uguale anche se l'ID non esiste)",
+        "Codice monouso con scadenza di 30 minuti; con il codice si sceglie la nuova password",
+        "Dopo il reset le sessioni precedenti dell'utente vengono chiuse",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-009",
+      "title": "Controllo dei permessi",
+      "description": "As a developer, I need one permission check so that every page and action obeys the permission matrix.",
+      "acceptanceCriteria": [
+        "Una sola funzione `can(user, azione)` calcola l'unione dei permessi di tutti i ruoli dell'utente",
+        "Le azioni riflettono `Matrice_Permessi_BOZZA.md` (sezioni GA e amministrazione)",
+        "Il Responsabile sito può eseguire ogni azione",
+        "Accesso negato: HTTP 403 (API) o pagina \"non autorizzato\"",
+        "Test automatici: per ogni ruolo, almeno un'azione consentita e una negata; utente con due ruoli ottiene l'unione",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-010",
+      "title": "Layout e menu per ruolo",
+      "description": "As a user, I want a menu that shows only the pages I can use.",
+      "acceptanceCriteria": [
+        "Intestazione con nome del sito e anno scolastico corrente",
+        "Menu che va a capo su più righe (niente scorrimento laterale)",
+        "Le voci dipendono da `can()` (es. \"Gestione GA\" solo con Responsabile GA)",
+        "Tema chiaro/scuro automatico, usabile a 400px di larghezza",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-011",
+      "title": "Utenti e ruoli (admin)",
+      "description": "As Responsabile sito, I want to assign roles so that people get the right access.",
+      "acceptanceCriteria": [
+        "Elenco utenti con ricerca per nome/ID e ruoli attuali",
+        "Aggiungere/togliere ruoli (anche più di uno per utente), incluso Responsabile GA",
+        "Non si può togliere l'ultimo Responsabile sito",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-012",
+      "title": "Invito di docenti e relatori",
+      "description": "As Responsabile sito, I want to invite teachers and external speakers with a link so that they register with the right role without choosing it.",
+      "acceptanceCriteria": [
+        "Il Responsabile crea un invito scegliendo il tipo (Docente o Relatore), nome ed e-mail, e ottiene un link monouso con scadenza di 14 giorni da copiare (il sito non invia la mail)",
+        "Il link porta a una registrazione senza ID dell'elenco e senza codice generale, con scelta della password",
+        "L'utente creato ha subito il ruolo del tipo scelto (Docente o Relatore), già confermato; nessuna scelta del tipo e nessun campo classe",
+        "Un docente usa la sua e-mail come ID, un relatore l'e-mail dell'invito",
+        "Link scaduto o già usato: messaggio chiaro",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-013",
+      "title": "Impostazioni (anno, date, blocchi orari)",
+      "description": "As Responsabile sito, I want to set the school year, GA dates and time blocks so that the site follows the real calendar.",
+      "acceptanceCriteria": [
+        "Creare un nuovo anno scolastico e sceglierlo come corrente",
+        "Elenco di blocchi orari modificabili (nome, inizio, fine) e date delle GA (anche \"da definire\")",
+        "Modifica di un blocco aggiorna subito tutte le pagine che lo mostrano",
+        "Le date GA possono restare \"da definire\": nessuna funzione del sito dipende dalle date, tutto funziona anche senza",
+        "Valori iniziali (orari definitivi decisi alla riunione GA del 22.10): 8:30–10:00, pausa, 10:15–11:45, pranzo 11:45–12:45, 12:45–14:15, pausa, 14:30–16:00 (modificabili)",
+        "QR code dell'indirizzo del sito, generato dal sito (nessun servizio esterno) e scaricabile come immagine, da mostrare nelle classi per registrarsi",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "",
+      "fase": 1
+    },
+    {
+      "id": "US-014",
+      "title": "Schema attività GA",
+      "description": "As a developer, I need the activity tables so that activities, rooms and enrollments are stored per school year.",
+      "acceptanceCriteria": [
+        "Tabelle: `rooms`, `activities` (titolo, descrizione, organizzatore, contatto, aula, durata in blocchi consecutivi, numero di ripetizioni 1 o 2, blocco di prima scelta, blocco di seconda scelta, materiali richiesti, min, max, stato: proposta/approvata/rifiutata, anno), `activity_sessions` (una riga per ogni volta che l'attività si svolge: giorno, blocco di inizio, numero di blocchi), `enrollments` (su una sessione)",
+        "Vincolo del database: un utente ha al massimo una iscrizione per blocco e giorno, contando tutti i blocchi occupati da una sessione lunga",
+        "Un utente si iscrive a una sola sessione della stessa attività (se è ripetuta)",
+        "Ogni attività e iscrizione ha `school_year_id`",
+        "Migrazione applicata sul database di test",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-015",
+      "title": "Elenco attività con filtri",
+      "description": "As a logged-in user, I want to browse all approved activities and filter them so that I find what interests me.",
+      "acceptanceCriteria": [
+        "Mostra solo attività approvate dell'anno corrente",
+        "Filtri: blocco/orario, aula, tipo di organizzatore (allievo/docente/relatore), ricerca testuale su titolo, descrizione e persona",
+        "Ogni scheda mostra titolo, descrizione, blocco, aula, organizzatore e posti liberi con barra",
+        "Attività piena: indicata \"Posti esauriti\"",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-016",
+      "title": "Posti liberi in tempo reale",
+      "description": "As a student, I want to see free seats update live so that I don't pick a full activity.",
+      "acceptanceCriteria": [
+        "Quando un'iscrizione cambia, tutte le pagine aperte con l'elenco si aggiornano entro 2 secondi senza ricaricare (SSE con Postgres LISTEN/NOTIFY)",
+        "Se la connessione cade, la pagina si riconnette da sola",
+        "Test: due client aperti, iscrizione da uno, l'altro vede il numero cambiare",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-017",
+      "title": "Proponi un'attività",
+      "description": "As an organizer (student, teacher or speaker), I want to propose an activity so that it can be approved and offered.",
+      "acceptanceCriteria": [
+        "Modulo con: nome, organizzatore (precompilato), breve spiegazione, telefono (e-mail già nota), aula/spazio preferito con le aule libere indicate, giorno, minimo e massimo di allievi",
+        "Gli orari dei blocchi sono scritti accanto alla scelta (es. \"Blocco 1 · 8:30–10:00\")",
+        "Blocco di **prima scelta** e blocco di **seconda scelta** (diversi tra loro), per non avere tutte le attività nello stesso blocco",
+        "Durata: uno o più blocchi consecutivi (es. un torneo di 3 ore occupa due blocchi)",
+        "\"Ripeti l'attività\": si può svolgere due volte, in due blocchi diversi, con iscritti diversi",
+        "Campo \"Materiali che ti servono\" (testo libero, es. proiettore, 10 sedie, palloni)",
+        "Controllo: minimo ≤ massimo, prima e seconda scelta diverse, durata che non attraversa il pranzo o la fine della giornata, campi obbligatori compilati",
+        "Dopo l'invio l'attività è in stato \"proposta\" e compare nella lista \"da approvare\" del Responsabile GA",
+        "Una proposta non è visibile agli altri allievi finché non è approvata",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-018",
+      "title": "Approvazione attività",
+      "description": "As Responsabile GA, I want to approve or reject proposals so that only good activities are published.",
+      "acceptanceCriteria": [
+        "Lista \"da approvare\" con dettagli di ogni proposta",
+        "Azioni Approva / Rifiuta (con motivo opzionale); l'approvazione la rende visibile nell'elenco",
+        "Il Responsabile GA può modificare una proposta prima di approvarla",
+        "All'approvazione sceglie il blocco definitivo di ogni sessione (prima o seconda scelta, o un altro) vedendo per ogni blocco quante attività e quanti posti ci sono già",
+        "Lista dei materiali richiesti da tutte le attività approvate, esportabile",
+        "Il proponente vede lo stato della sua proposta nella pagina \"La mia attività\"",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-019",
+      "title": "La mia attività",
+      "description": "As an organizer, I want to manage my own activity so that I can update it and see who joins.",
+      "acceptanceCriteria": [
+        "Visibile solo a chi ha proposto almeno un'attività, e solo per le proprie",
+        "Modifica di descrizione e max partecipanti (il massimo non scende sotto gli iscritti attuali)",
+        "Elenco iscritti con nome e classe",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "",
+      "fase": 2
+    },
+    {
+      "id": "US-020",
+      "title": "Iscrizione e annullamento",
+      "description": "As a student or teacher, I want to join and leave an activity so that I build my own program.",
+      "acceptanceCriteria": [
+        "Pulsante \"Iscriviti\" sulle schede, \"Annulla iscrizione\" se già iscritto",
+        "Rifiutata con messaggio chiaro se: attività piena, già iscritto a un'altra attività nello stesso blocco/giorno, iscrizioni chiuse",
+        "Due iscrizioni simultanee all'ultimo posto: una sola riesce (controllo nel database, test automatico)",
+        "Il posto liberato dall'annullamento torna subito disponibile",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "",
+      "fase": 3
+    },
+    {
+      "id": "US-021",
+      "title": "Il mio programma",
+      "description": "As a participant, I want to see my day by time block so that I know where to be.",
+      "acceptanceCriteria": [
+        "Un riquadro per blocco con attività, aula e organizzatore",
+        "I blocchi senza scelta sono evidenziati con \"Scegli un'attività\"",
+        "Dopo l'assegnazione casuale mostra anche quali attività sono state assegnate",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "",
+      "fase": 3
+    },
+    {
+      "id": "US-022",
+      "title": "Finestre di iscrizione",
+      "description": "As Responsabile GA, I want to control when enrollment is open so that organizers go first.",
+      "acceptanceCriteria": [
+        "Flusso: prima si raccolgono le proposte, poi il Responsabile GA guarda le attività approvate, poi apre le iscrizioni",
+        "Tre stati impostabili a mano: \"Solo organizzatori\", \"Aperte a tutti\", \"Chiuse\"",
+        "Pulsante \"Apri le iscrizioni\" per i Responsabili GA, con conferma: porta lo stato ad \"Aperte a tutti\" e avvia la mail di apertura a tutti gli allievi e docenti (US-003); la mail parte una sola volta per anno, un secondo invio richiede una conferma esplicita",
+        "Con \"Solo organizzatori\" si iscrivono solo utenti con almeno un'attività approvata; gli altri vedono un avviso",
+        "Con \"Chiuse\" nessuno si iscrive né annulla (tranne il Responsabile GA)",
+        "Lo stato attuale è visibile in Home",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "",
+      "fase": 3
+    },
+    {
+      "id": "US-023",
+      "title": "Assegnazione casuale dei non iscritti",
+      "description": "As Responsabile GA, I want to assign students who didn't enroll so that nobody is left without an activity.",
+      "acceptanceCriteria": [
+        "Pulsante \"Assegna a caso\" disponibile quando le iscrizioni sono chiuse",
+        "Per ogni allievo registrato e per ogni blocco senza iscrizione assegna un'attività con posti liberi e senza conflitti",
+        "Se l'elenco ID è caricato, gli allievi dell'elenco non ancora registrati sono segnalati a parte (non assegnabili); senza elenco si lavora solo sui registrati, nessun conteggio totale richiesto",
+        "Anteprima con il numero di allievi da assegnare e i posti disponibili prima di confermare",
+        "Se i posti non bastano: elenco degli allievi non assegnabili, nessun assegnamento parziale silenzioso",
+        "Le assegnazioni sono segnate come \"assegnate\" e annullabili in blocco",
+        "Test con dati di esempio: nessun superamento dei posti massimi, nessun doppio impegno",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "",
+      "fase": 3
+    },
+    {
+      "id": "US-024",
+      "title": "Segnare le presenze",
+      "description": "As an organizer, teacher or speaker, I want to mark who is present so that attendance is recorded.",
+      "acceptanceCriteria": [
+        "Nella pagina dell'attività, per ogni iscritto una casella presente/assente",
+        "Chi organizza (anche se allievo) segna solo la sua attività; il Responsabile GA le segna tutte",
+        "Le presenze si possono modificare fino alla chiusura dell'anno scolastico",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "",
+      "fase": 4
+    },
+    {
+      "id": "US-025",
+      "title": "Presenze mancanti",
+      "description": "As Responsabile GA, I want to see which activities have no attendance recorded so that I can chase them.",
+      "acceptanceCriteria": [
+        "Riquadro in \"Gestione GA\" con le attività la cui fine è passata e senza presenze segnate, con nome e contatto dell'organizzatore",
+        "Nessuna mail automatica (solo visualizzazione nel sito)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "",
+      "fase": 4
+    },
+    {
+      "id": "US-026",
+      "title": "Gestione GA",
+      "description": "As Responsabile GA, I want one page with all activities and participants so that I can run the days.",
+      "acceptanceCriteria": [
+        "Tabella di tutte le attività con blocco, aula, iscritti/max, organizzatore",
+        "Dettaglio con lista iscritti e presenze",
+        "Segnalazione delle attività sotto il minimo di partecipanti",
+        "Vista anagrafica relatori (nome, contatto, attività) e docenti",
+        "Accessibile solo a Responsabile GA e Responsabile sito",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": "",
+      "fase": 4
+    },
+    {
+      "id": "US-027",
+      "title": "Esportazioni",
+      "description": "As Responsabile GA, I want to export lists so that I can print or share them.",
+      "acceptanceCriteria": [
+        "Export CSV e XLSX di: attività, allievi (con classe e programma), relatori, docenti, presenze",
+        "Ogni export può essere filtrato (tutte le attività, alcune scelte, solo quelle di allievi, ecc.)",
+        "Il file contiene solo dati dell'anno scolastico scelto",
+        "Il file si apre correttamente in Excel con gli accenti (UTF-8)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": "",
+      "fase": 4
+    },
+    {
+      "id": "US-028",
+      "title": "Separazione per anno e archivio",
+      "description": "As Responsabile sito, I want old years to stay stored but hidden so that data never mixes.",
+      "acceptanceCriteria": [
+        "Tutte le pagine mostrano solo l'anno corrente",
+        "Il Responsabile sito e il Responsabile GA possono consultare un anno passato in sola lettura",
+        "Cambiando l'anno corrente, le attività e le iscrizioni del vecchio anno non sono più visibili agli utenti normali",
+        "Test: dati creati in due anni diversi non compaiono mai insieme",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": "",
+      "fase": 5
+    },
+    {
+      "id": "US-029",
+      "title": "Riproponi attività, relatori e docenti",
+      "description": "As an organizer, I want to re-propose last year's activity so that I don't have to rewrite it.",
+      "acceptanceCriteria": [
+        "Nella pagina \"Proponi attività\" elenco delle mie attività dell'anno precedente con pulsante \"Riproponi\"",
+        "Riproponi copia i dati in una nuova proposta dell'anno corrente (stato \"proposta\"), modificabile prima dell'invio",
+        "Il Responsabile GA può riproporre relatori e docenti dell'anno precedente come contatti dell'anno corrente",
+        "L'attività originale resta invariata",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": "",
+      "fase": 5
+    },
+    {
+      "id": "US-030",
+      "title": "Home",
+      "description": "As a user, I want a Home that tells me what to do now.",
+      "acceptanceCriteria": [
+        "Mostra date GA (o \"da definire\"), stato delle iscrizioni, numero di attività scelte con link al programma, link alle attività",
+        "Spiega in tre righe come funzionano precedenza e assegnazione casuale",
+        "Sezione sondaggi/bacheca assente (arriveranno in seguito)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "",
+      "fase": 5
+    },
+    {
+      "id": "US-031",
+      "title": "Schema tornei",
+      "description": "As a developer, I need the tournament data model so that any sport and format can be stored per school year.",
+      "acceptanceCriteria": [
+        "Tabelle: torneo (nome, attività GA collegata (facoltativa), sport, descrizione, regolamento, anno scolastico, stato), squadra, membro squadra, gruppo, partita, campo, arbitro, evento di partita",
+        "Torneo: modalità `squadre` o `singoli`, giocatori per squadra (min/max), formato, tipo di punteggio, punti per vittoria/pareggio/sconfitta, durata partita in minuti",
+        "Stati del torneo: `bozza` → `iscrizioni` → `in corso` → `concluso`",
+        "Ogni torneo appartiene a un anno scolastico (FR-6)",
+        "Un utente è in una sola squadra per torneo, imposto dal database",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-032",
+      "title": "Creare e configurare un torneo",
+      "description": "As Responsabile tornei or as GA organizer, I want to create a tournament and set its rules so that any sport can be organized.",
+      "acceptanceCriteria": [
+        "Modulo: nome, sport, descrizione, regolamento (testo libero), modalità, giocatori per squadra, formato, tipo di punteggio, punti, durata partita, massimo squadre",
+        "Tipo di punteggio: `punti/gol` (due numeri) oppure `set` (al meglio di N set, risultato per ogni set)",
+        "Può creare un torneo il Responsabile tornei, e anche ogni Organizzatore GA (chi ha un'attività approvata) per la propria attività: il torneo resta collegato all'attività e il creatore ne diventa Organizzatore torneo, senza ulteriore approvazione",
+        "L'Organizzatore GA gestisce solo i tornei che ha creato (o a cui è stato aggiunto); il Responsabile tornei li vede e gestisce tutti",
+        "Può assegnare uno o più Organizzatori torneo e uno o più Arbitri (utenti registrati, cercati per nome o ID)",
+        "Può definire i campi/spazi del torneo (nome, es. \"Palestra A\", \"Campo esterno\")",
+        "Le impostazioni non si possono cambiare dopo la generazione del calendario, tranne nome, descrizione e regolamento",
+        "Il torneo in `bozza` non è visibile agli altri",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-033",
+      "title": "Iscrizione di squadre e giocatori",
+      "description": "As a student, I want to register my team (or myself) in a tournament so that I can play.",
+      "acceptanceCriteria": [
+        "Elenco tornei con sport, stato, squadre iscritte e posti rimasti",
+        "Modalità squadre: il capitano crea la squadra (nome) e aggiunge i compagni cercandoli per nome o ID; il compagno conferma dal sito",
+        "Una squadra è valida solo con il numero di giocatori tra min e max; nome squadra unico nel torneo",
+        "Modalità singoli: l'utente si iscrive da solo",
+        "Un utente non può stare in due squadre dello stesso torneo; può stare in tornei diversi",
+        "Iscrizioni aperte solo in stato `iscrizioni`; fino alla chiusura la squadra si può modificare e ritirare",
+        "L'organizzatore può aggiungere, togliere o approvare squadre a mano",
+        "Oltre il massimo squadre: iscrizione rifiutata con messaggio chiaro, senza eccezioni",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-034",
+      "title": "Formati e generazione del calendario",
+      "description": "As an organizer, I want the site to generate the matches so that I don't draw the schedule by hand.",
+      "acceptanceCriteria": [
+        "Formati: `girone all'italiana` (solo andata o andata e ritorno), `eliminazione diretta` (con turni di riposo se le squadre non sono potenze di 2), `gironi + eliminazione` (numero di gironi e qualificate per girone impostabili)",
+        "Sorteggio casuale delle squadre nei gironi/tabellone, oppure teste di serie scelte a mano",
+        "Anteprima del calendario prima di confermare; rigenerabile finché nessun risultato è stato inserito",
+        "Ogni squadra incontra le altre nel numero corretto di partite (verificato con un test per 3–16 squadre)",
+        "Le partite delle fasi a eliminazione successive si creano vuote e si riempiono da sole (US-037)",
+        "Alla conferma lo stato passa a `in corso`",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-035",
+      "title": "Campi, orari e arbitri delle partite",
+      "description": "As an organizer, I want to assign each match a field, a time and a referee so that the tournament runs without clashes.",
+      "acceptanceCriteria": [
+        "Assegnazione automatica di campo e orario partendo da una data/ora di inizio, dalla durata partita e da una pausa tra partite",
+        "Modifica manuale di campo, data, ora e arbitro di ogni partita",
+        "Il sito blocca: due partite sullo stesso campo in orari sovrapposti, una squadra o un arbitro in due partite contemporanee",
+        "Gli orari di un torneo non sono legati alle date GA; un avviso (non un blocco) segnala se una squadra ha anche un'attività GA nello stesso orario",
+        "Partita rinviata: nuovo orario con motivo, la squadra vede la modifica",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-036",
+      "title": "Inserire i risultati",
+      "description": "As a referee or organizer, I want to enter match results so that standings update by themselves.",
+      "acceptanceCriteria": [
+        "Solo l'arbitro della partita e gli Organizzatori del torneo possono inserire/correggere il risultato (i capitani e i giocatori non possono, nemmeno con conferma dell'avversario)",
+        "Punteggio semplice o per set, secondo il tipo di punteggio del torneo; stato partita: `da giocare`, `in corso`, `finita`",
+        "Forfait (vittoria a tavolino con punteggio configurabile) e partita annullata",
+        "Nelle partite a eliminazione il pareggio non è ammesso: si indica il vincitore (supplementari/rigori) con nota",
+        "Ogni correzione è registrata (chi, quando, valore precedente)",
+        "Facoltativo: eventi di partita per giocatore (gol/punti, cartellini) per la classifica marcatori",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-037",
+      "title": "Classifica e tabellone automatici",
+      "description": "As a participant, I want standings and bracket that update live so that I always know where my team stands.",
+      "acceptanceCriteria": [
+        "Classifica dei gironi: punti, partite giocate, vinte/pareggiate/perse, differenza reti/set, calcolata dai risultati",
+        "Criteri di spareggio impostabili nel torneo, in ordine (punti, scontro diretto, differenza reti, gol fatti, sorteggio)",
+        "Tabellone a eliminazione: il vincitore avanza da solo al turno successivo; correggere un risultato aggiorna i turni seguenti (o blocca se il turno seguente è già stato giocato, con avviso)",
+        "Qualificate dai gironi inserite da sole nella fase a eliminazione a gironi conclusi",
+        "Classifica marcatori se sono stati registrati eventi",
+        "Aggiornamento in tempo reale su tutte le pagine aperte (come FR-9)",
+        "Test con dati di esempio: classifica e avanzamenti corretti, spareggi inclusi",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-038",
+      "title": "Pagine del torneo e \"le mie partite\"",
+      "description": "As a user, I want to follow a tournament and see my own matches so that I show up at the right place and time.",
+      "acceptanceCriteria": [
+        "Pagina torneo: regolamento, squadre, calendario (filtri per giorno, campo, squadra), classifiche, tabellone, risultati",
+        "\"Le mie partite\": prossime partite dell'utente (campo, ora, avversario, arbitro) in Home e nel menu",
+        "Partite in corso evidenziate; vista leggibile da telefono (400px) e utilizzabile da proiettore (schermo intero senza menu)",
+        "Tutti gli utenti loggati vedono i tornei non in `bozza`",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    },
+    {
+      "id": "US-039",
+      "title": "Esportazioni, stampa e archivio tornei",
+      "description": "As Responsabile tornei or tournament organizer, I want to export and archive tournaments so that results are kept and the next year starts easily.",
+      "acceptanceCriteria": [
+        "Export CSV/XLSX di squadre, calendario, risultati, classifiche, marcatori",
+        "Stampa pulita (CSS di stampa) di calendario e tabellone",
+        "\"Duplica torneo\" da un anno precedente: copia regolamento, formato, punteggio e campi, senza squadre né partite",
+        "I tornei conclusi restano consultabili in archivio, separati per anno scolastico (FR-6)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": "",
+      "fase": 6
+    }
+  ]
+}

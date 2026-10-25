@@ -1,0 +1,15 @@
+# Ralph progress — Portale CPT Trevano (PRD: 006_PRD/prd-fondamenta-ga.md, prd.json)
+
+## Ambiente di test (vale per tutte le storie, da impostare in US-001)
+- Comando test: `npm test` (runner: node:test con tsx, niente Jest). Typecheck: `npm run typecheck` (tsc --noEmit).
+- Database di test: PostgreSQL VERO avviato dai test con il pacchetto npm `embedded-postgres`
+  (porta libera casuale, cartella dati temporanea, cancellata a fine test). Funziona sia nella sandbox Linux
+  sia su Windows (dove Postgres NON è installato). Mai usare `DATABASE_URL` del file `.env` nei test:
+  i test leggono solo `TEST_DATABASE_URL`, che impostano loro stessi.
+- Le migrazioni si applicano al database di test all'avvio dei test.
+- Mail: in sviluppo/test trasporto finto che salva le mail (nessun invio reale).
+- Niente servizi esterni o a pagamento. Config solo da variabili d'ambiente (`.env.example` con tutte le chiavi, senza segreti).
+- Lingua dell'interfaccia: italiano. Tempo reale: SSE + LISTEN/NOTIFY.
+- Le storie vanno fatte una per iterazione, in ordine di priority; con --fase N solo quella fase.
+
+## Note per chi lavora dopo
