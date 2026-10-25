@@ -23,3 +23,12 @@
 - `docker-compose.yml` ha healthcheck su Postgres; `Dockerfile` usa `node --require tsx/cjs` (niente build step).
 - tsconfig: `"module": "ESNext", "moduleResolution": "Bundler"` — necessario perché embedded-postgres usa il campo `exports` di package.json.
 - **Avvertenza embedded-postgres**: il package si chiama `embedded-postgres@18.4.0-beta.17` (non esiste una versione stabile senza suffisso beta/alpha).
+
+- [Nota del revisore, 25.10] Lo script "test" in package.json esegue solo tests/smoke.test.ts: deve eseguire TUTTI i test (es. node --require tsx/cjs --test "tests/**/*.test.ts"). Correggilo nella prossima storia che aggiunge test.
+
+### US-002 — Utenti, ruoli e anni scolastici (2026-10-25)
+- Migrazione `src/db/migrations/002_users_roles_years.sql`: `school_years` (indice unico parziale: al massimo un `is_current`), `users` (`login_id` unico case-insensitive via `lower(login_id)`, `class_name` solo allievi, `password_hash` NULL finché non scelta), `roles` (PK `code`: allievo, docente, relatore, resp_ga, resp_sito), `user_roles` (PK user_id+role_code).
+- L'anno 2026-2027 corrente è inserito dalla migrazione stessa.
+- `src/db/seed.ts` → `seed(pool)`: crea il Responsabile sito (login da `ADMIN_LOGIN_ID`, default admin@samtrevano.ch) solo se nessuno ha il ruolo resp_sito; idempotente. Chiamato in `src/index.ts` e in `tests/helpers/db.ts` dopo le migrazioni. La password del Resp. sito è NULL: va impostata col recupero password (US-008).
+- `src/users/roles.ts`: `assignRole`, `removeRole`, `getUserRoles`, `getCurrentSchoolYear`, tipo `RoleCode`.
+- `npm test` ora lancia `tests/*.test.ts` (ogni file avvia il suo embedded-postgres, ~10 s ciascuno).

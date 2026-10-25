@@ -32,8 +32,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 002_users_roles_years.sql; seed Resp. sito in src/db/seed.ts (ADMIN_LOGIN_ID); helper ruoli in src/users/roles.ts.",
       "fase": 1
     },
     {

@@ -6,7 +6,7 @@
     "start": "node --require tsx/cjs src/index.ts",
     "dev": "node --watch --require tsx/cjs src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --require tsx/cjs --test tests/smoke.test.ts"
+    "test": "node --require tsx/cjs --test tests/*.test.ts"
   },
   "dependencies": {
     "express": "^4.21.1",

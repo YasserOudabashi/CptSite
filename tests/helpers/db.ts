@@ -4,6 +4,7 @@ import net from 'net';
 import os from 'os';
 import path from 'path';
 import { runMigrations } from '../../src/db/migrate';
+import { seed } from '../../src/db/seed';
 
 function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -46,6 +47,7 @@ export async function createTestDb(): Promise<TestDb> {
 
   const pool = new Pool({ connectionString });
   await runMigrations(pool);
+  await seed(pool);
 
   return {
     pool,
