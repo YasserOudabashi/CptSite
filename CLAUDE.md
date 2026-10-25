@@ -52,6 +52,11 @@ Il file dove mettere tutto ciò che riguarda la seconda assemblea (proposte, agg
 ## Decisioni riunione GA (22.10)
 Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confermati. Torneo di calcio come extra fuori orario. Aula lettura (chiedere a un docente). Sito: prima/seconda scelta di blocco, attività su più blocchi, ripetibile 2 volte, richiesta materiali, pulsante "Apri le iscrizioni" che manda una mail a tutti allievi e docenti (quindi il sito invia TRE tipi di mail), QR code del sito. Budget (vicedirettore Peretti): importo non noto; acquisti grandi da grandi aziende = preventivo e paga la scuola, acquisti piccoli (Migros, Lidl) = paghiamo noi e ci rimborsano. Tutte le richieste alla direzione le fa Yasser. QR code: si genera quando il sito è online. Aperti: buvette/regali relatori, info point, invito all'esercito (Yasser chiede alla direzione).
 
+## Capilab / informatica scuola (25.10)
+- Contatti: Ingrid Cereda e PaPo (ufficio capilab). Lista di distribuzione paritetica@samtrevano.ch aggiornata da Ingrid con l'Excel del 15.10 (+2 allievi).
+- Pubblicazione: capilab dice di **finire prima il sito** e poi ricontattarli (hosting e indirizzo si decidono dopo).
+- Caselle GA/Eco e gruppi docenti/allievi con permesso d'invio: da spiegare a voce in ufficio capilab **venerdì 30.10 mattina**. Le caselle saranno sul dominio samtrevano.ch (non Outlook.com): se i gruppi esistono, la mail di apertura iscrizioni è una sola mail per gruppo.
+
 ## Decisioni prese (15.10)
 - **Login/registrazione**: l'allievo inserisce il proprio ID + un codice generale (uguale per tutti) → il sito gli invia via mail un codice personale (per distinguerlo dagli altri) → inserito il codice personale sceglie la password (salvata hashata). Ruolo base = Allievo: può solo iscriversi alle GA o iscriversi per andare nell'aula dell'Eco Comitato.
 - **Mail**: 3 indirizzi Outlook nuovi (GA, Eco Comitato, Assemblea) che ricevono. Il sito invia SOLO tre mail: codice personale di registrazione, recupero password e (dal 22.10) apertura delle iscrizioni GA. Tutte le altre (relatori, avvisi) le manda Claude via Claude in Chrome su richiesta di Yasser. Yasser = Responsabile sito (fa tutto). Matrice permessi: `Matrice_Permessi_BOZZA.md` (ruoli base + ruoli che aggiungono, nessun conflitto).
