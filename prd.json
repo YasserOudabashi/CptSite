@@ -16,8 +16,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Node 22 + TypeScript (ESNext/Bundler), Express, pg, embedded-postgres per i test. docker-compose.yml con healthcheck. Migration runner in src/db/migrate.ts. Test: node:test + tsx/cjs.",
       "fase": 1
     },
     {

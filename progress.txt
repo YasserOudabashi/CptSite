@@ -13,3 +13,13 @@
 - Le storie vanno fatte una per iterazione, in ordine di priority; con --fase N solo quella fase.
 
 ## Note per chi lavora dopo
+
+### US-001 — Scheletro completato (2026-10-25)
+- Stack: Node 22, TypeScript (module: ESNext, moduleResolution: Bundler), Express, pg.
+- `src/app.ts` esporta `app` (Express), `src/index.ts` avvia il server e chiama `runMigrations`.
+- Migration runner: `src/db/migrate.ts` — legge `src/db/migrations/*.sql` in ordine alfabetico, traccia in `schema_migrations`.
+- Test DB: `embedded-postgres` v18.4.0-beta.17 (binary PostgreSQL 18 pre-bundled, nessun download in runtime). Helper `tests/helpers/db.ts` con porta casuale via `getFreePort()`.
+- Comando test: `node --require tsx/cjs --test tests/smoke.test.ts`.
+- `docker-compose.yml` ha healthcheck su Postgres; `Dockerfile` usa `node --require tsx/cjs` (niente build step).
+- tsconfig: `"module": "ESNext", "moduleResolution": "Bundler"` — necessario perché embedded-postgres usa il campo `exports` di package.json.
+- **Avvertenza embedded-postgres**: il package si chiama `embedded-postgres@18.4.0-beta.17` (non esiste una versione stabile senza suffisso beta/alpha).

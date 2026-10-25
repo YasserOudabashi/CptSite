@@ -1,3 +1,9 @@
+# Dipendenze e build
+node_modules/
+dist/
+*.env
+.env.local
+
 # Dati personali (minorenni / terzi): restano solo in locale
 Contatti/
 Analisi_Lilu2/*.xlsx
