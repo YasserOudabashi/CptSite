@@ -53,7 +53,10 @@ export async function createTestDb(): Promise<TestDb> {
     pool,
     stop: async () => {
       await pool.end();
-      await pg.stop();
+      // ponytail: su Windows la cancellazione della cartella temporanea può dare EBUSY; è in os.tmpdir(), si ignora
+      await pg.stop().catch((e: NodeJS.ErrnoException) => {
+        if (e.code !== 'EBUSY') throw e;
+      });
     },
   };
 }

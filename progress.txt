@@ -32,3 +32,11 @@
 - `src/db/seed.ts` → `seed(pool)`: crea il Responsabile sito (login da `ADMIN_LOGIN_ID`, default admin@samtrevano.ch) solo se nessuno ha il ruolo resp_sito; idempotente. Chiamato in `src/index.ts` e in `tests/helpers/db.ts` dopo le migrazioni. La password del Resp. sito è NULL: va impostata col recupero password (US-008).
 - `src/users/roles.ts`: `assignRole`, `removeRole`, `getUserRoles`, `getCurrentSchoolYear`, tipo `RoleCode`.
 - `npm test` ora lancia `tests/*.test.ts` (ogni file avvia il suo embedded-postgres, ~10 s ciascuno).
+- [Nota del revisore, 25.10] Su Windows i test PASSANO ma il processo non termina: embedded-postgres resta acceso a fine test (checkpointer exited with code 1). Aggiungi --test-force-exit allo script "test" e assicurati che ogni file di test fermi il proprio Postgres in un after() con await. Più file di test non devono avviare ognuno un Postgres in parallelo: usa --test-concurrency=1 oppure un solo Postgres condiviso (global setup).
+- [Nota del revisore, 25.10] Il run precedente si è interrotto a metà di US-003: in src/mail, tests/mail.test.ts e src/db/migrations/003_mail_queue.sql ci sono modifiche non committate. Riprendi da lì (controlla che siano coerenti) prima di committare US-003.
+
+### US-003 — Invio e-mail (2026-11-09)
+- `src/mail/index.ts` espone solo `sendPersonalCode`, `sendPasswordReset`, `sendEnrollmentOpen` (+ `MailSendError`). Trasporto in `src/mail/transport.ts`: SMTP da variabili `SMTP_*`, `FakeTransport` in sviluppo/test. Coda in `src/mail/queue.ts` (tabella `mail_jobs`, migrazione 003): lotti `MAIL_BATCH_SIZE`, limite `MAIL_DAILY_LIMIT`, 3 tentativi, registro con `getMailLog` (la pagina per il Responsabile GA va fatta con US-026).
+- Chi chiama `sendPersonalCode` (US-005) deve annullare il codice se riceve `MailSendError`.
+- Test: `npm test` ora usa --test-concurrency=1 --test-force-exit; `stop()` del DB di test ignora EBUSY su Windows. 17/17 verdi su Windows.
+- node_modules installati nella sandbox Linux non funzionano su Windows (esbuild/tsc): su Windows rifare `npm ci`.
