@@ -40,3 +40,11 @@
 - Chi chiama `sendPersonalCode` (US-005) deve annullare il codice se riceve `MailSendError`.
 - Test: `npm test` ora usa --test-concurrency=1 --test-force-exit; `stop()` del DB di test ignora EBUSY su Windows. 17/17 verdi su Windows.
 - node_modules installati nella sandbox Linux non funzionano su Windows (esbuild/tsc): su Windows rifare `npm ci`.
+
+### US-004 — Codice generale ed elenco ID (2026-11-12)
+- Migrazione `004_student_ids_settings.sql`: `student_ids` (per anno, unico case-insensitive) e `app_settings` (chiave/valore; `general_code_hash`).
+- `src/admin/studentList.ts`: `importStudentIds` (CSV, duplicati ignorati, righe non valide con numero di riga), `isAllowedStudentId(pool, id)` (elenco vuoto = basta il dominio `SCHOOL_DOMAIN`), `setGeneralCode`/`checkGeneralCode` — US-005 deve usare queste due funzioni.
+- Hash lento con scrypt di Node in `src/auth/password.ts` (`hashSecret`/`verifySecret`): riusare per codice personale e password (US-005/006), nessuna dipendenza nuova.
+- `src/auth/guard.ts`: `requireRole(role)` legge `req.user` (da impostare con la sessione in US-007; senza utente 401, ruolo mancante 403). US-009 lo sostituirà con `can()`. `adminRouter(pool)` è montato in `src/index.ts` e per ora senza sessione è irraggiungibile in produzione.
+- Verifica in browser NON fatta (manca il login): pagina e permessi testati via HTTP in `tests/student-list.test.ts`. Rifarla dopo US-007.
+- Test 22/22 verdi su Linux. In questa sandbox i node_modules sono quelli di Windows: ho provato in una copia in /tmp con `npm ci` (non toccare i node_modules reali).

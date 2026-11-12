@@ -69,8 +69,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 004; logica in src/admin/studentList.ts, pagina /admin/studenti in src/admin/router.ts. Verifica in browser non fatta: il login arriva con US-007 (testata via HTTP nei test).",
       "fase": 1
     },
     {
