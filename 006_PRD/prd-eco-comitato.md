@@ -177,6 +177,20 @@ I ruoli si sommano (unione dei permessi). Nuovi o precisati per l'Eco:
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
+### ECO-010b: PDF della richiesta e dell'accettazione dell'aula (aggiunta 12.11)
+
+**Description:** As a proponent and as Responsabile Eco (Attività), I want a PDF of the request and of the decision to be generated automatically, so that there is a printable and archived record of who uses the Space and why.
+
+**Acceptance Criteria:**
+
+- [ ] All'invio di una proposta (ECO-009) il sito genera il PDF "Richiesta di uso dello Spazio": numero di protocollo, data, proponente (nome, classe/ruolo), titolo, tipo, data e orario, partecipanti previsti, materiali richiesti
+- [ ] Alla decisione (ECO-010) il sito genera il PDF "Accettazione" o "Rifiuto": stessi dati + esito, chi ha deciso, quando, motivazione (obbligatoria se modifica o rifiuto), eventuali modifiche rispetto alla richiesta
+- [ ] I PDF si scaricano dalla pagina della proposta (proponente, chi approva, Resp. sito) e restano archiviati con la proposta, anche se poi viene modificata (nuova versione, la vecchia resta)
+- [ ] Un solo modello grafico condiviso con gli altri PDF del sito (intestazione, numero, data) — dettagli dopo la decisione su logo/firma
+- [ ] Niente invio automatico per mail (FR-E9): il proponente lo scarica dal sito
+- [ ] Test: i due PDF vengono creati, contengono protocollo e esito corretti, la vecchia versione resta dopo una modifica
+- [ ] Typecheck passes
+
 ### ECO-011: Attività, giorni liberi e iscrizione
 
 **Description:** As a student or teacher, I want to see upcoming activities and free days and join one so that I can take part.

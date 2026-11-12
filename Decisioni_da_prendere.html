@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisioni da prendere</title>
+<style>
+  :root { --bg:#f6f7f5; --card:#fff; --ink:#1d2421; --muted:#5d6b65; --line:#d9dfdb; --acc:#0f6b5c; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141917; --card:#1d2421; --ink:#e8ede9; --muted:#9aa8a1; --line:#33403a; --acc:#4fc2a8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 120px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 32px 0 8px; color: var(--acc); }
+  .lead { color: var(--muted); margin: 0 0 16px; }
+  .q { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+  .q > b { display:block; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: .9rem; margin: 0 0 8px; }
+  label { display:block; margin: 3px 0; cursor:pointer; }
+  textarea, input[type=text] { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); font:inherit; }
+  textarea { min-height: 60px; }
+  table { width:100%; border-collapse: collapse; font-size: .92rem; }
+  td, th { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align:left; vertical-align: top; }
+  td.c { white-space: nowrap; text-align:center; }
+  .tag { font-size:.75rem; color: var(--muted); }
+  .bar { position: fixed; left:0; right:0; bottom:0; background: var(--card); border-top:1px solid var(--line); padding: 12px 16px; display:flex; gap:10px; justify-content:center; flex-wrap: wrap; }
+  button { background: var(--acc); color: #fff; border:0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor:pointer; }
+  button.sec { background: transparent; color: var(--acc); border:1px solid var(--acc); }
+  #out { display:none; }
+  .ok { color: var(--acc); font-weight:600; align-self:center; }
+</style>
+</head>
+<body>
+<main>
+<h1>Decisioni da prendere</h1>
+<p class="lead">Compila quello che sai, lascia vuoto il resto. Alla fine premi <b>Copia le risposte</b> e incollale in chat: le applico tutte insieme. Le risposte restano salvate in questo browser anche se chiudi la pagina.</p>
+
+<h2>1. Date</h2>
+<div class="q"><b>Nel messaggio avevi scritto "le date che ho sono le seguenti ……" ma le date non c'erano. Quali sono?</b>
+<p class="hint">Liceo 3 l'ho già segnato: GA il 13 e 14 aprile 2027.</p>
+<textarea data-k="date_mancanti"></textarea></div>
+<div class="q"><b>Date candidate per le nostre GA (se ne hai già in mente)</b>
+<p class="hint">Verbale 06.10: verso fine marzo, 1 giorno (massimo 2).</p>
+<input type="text" data-k="date_ga_candidate"></div>
+
+<h2>2. Sondaggi su Forms</h2>
+<div class="q"><b>Sondaggio date Assemblea: a chi lo mando?</b>
+<label><input type="radio" name="sd_dest" value="Solo docenti della paritetica"> Solo docenti della paritetica</label>
+<label><input type="radio" name="sd_dest" value="Tutta la paritetica (lista paritetica@samtrevano.ch)"> Tutta la paritetica (lista paritetica@samtrevano.ch)</label>
+<label><input type="radio" name="sd_dest" value="Lo mando io"> Lo mando io</label></div>
+<div class="q"><b>Sondaggio abbigliamento: a chi e quando?</b>
+<label><input type="checkbox" data-k="abb_allievi"> Tutti gli allievi</label>
+<label><input type="checkbox" data-k="abb_docenti"> Anche docenti</label>
+<label><input type="checkbox" data-k="abb_direzione"> Anche direzione/personale</label>
+<label><input type="checkbox" data-k="abb_dopo_assemblea"> Solo dopo che l'Assemblea approva la bozza</label>
+<p class="hint">Soglia per diventare proposta di regola (bozza: più del 50%)</p>
+<input type="text" data-k="abb_soglia" placeholder="es. 50%"></div>
+
+<h2>3. Storie nuove per il sito: dove creare PDF in automatico</h2>
+<div class="q"><b>Per ognuno: sì (lo voglio), dopo (più avanti) o no</b>
+<p class="hint">L'esempio che hai fatto: richiesta di usare l'aula dell'Eco Comitato → PDF della richiesta e PDF dell'accettazione.</p>
+<table id="pdf"><thead><tr><th>PDF</th><th class="c">Sì</th><th class="c">Dopo</th><th class="c">No</th></tr></thead><tbody></tbody></table></div>
+<div class="q"><b>Come si fanno i PDF?</b>
+<label><input type="radio" name="pdf_tech" value="Generati dal server con lo stesso modello per tutti (si possono allegare alle mail e archiviare)"> Generati dal server con lo stesso modello grafico per tutti: si possono allegare e archiviare <span class="tag">(consigliato)</span></label>
+<label><input type="radio" name="pdf_tech" value="Pagina di stampa + Salva come PDF del browser"> Pagina di stampa + "Salva come PDF" del browser: più semplice, ma non si allega in automatico</label></div>
+<div class="q"><b>Sui PDF: logo e intestazione</b>
+<label><input type="checkbox" data-k="pdf_logo_cpt"> Logo e intestazione CPT Trevano</label>
+<label><input type="checkbox" data-k="pdf_firma"> Spazio per la firma (es. Responsabile, direzione)</label>
+<label><input type="checkbox" data-k="pdf_numero"> Numero di protocollo e data</label></div>
+<div class="q"><b>Aula Eco: chi accetta le richieste di uso?</b>
+<label><input type="checkbox" data-k="eco_acc_resp"> Responsabile Eco Comitato</label>
+<label><input type="checkbox" data-k="eco_acc_coord"> Coordinatore Eco-Schools (Moscatelli)</label>
+<label><input type="checkbox" data-k="eco_acc_gestore"> Gestore di turno</label>
+<input type="text" data-k="eco_acc_altro" placeholder="altro / note"></div>
+<div class="q"><b>Altre decisioni da trasformare in storie</b>
+<p class="hint">Cose decise di cui vuoi una storia nel PRD (oltre ai PDF).</p>
+<textarea data-k="storie_altre"></textarea></div>
+
+<h2>4. Capilab</h2>
+<div class="q"><b>L'incontro del 30.10 c'è stato? Se sì, cosa hanno risposto?</b>
+<textarea data-k="capilab_3010"></textarea></div>
+<div class="q"><b>Domani porti anche il PC con la demo, o la stampo/mando io?</b>
+<label><input type="radio" name="capi_demo" value="Porto il PC"> Porto il PC</label>
+<label><input type="radio" name="capi_demo" value="Stampa la spiegazione"> Stampo la spiegazione</label></div>
+
+<h2>5. Outlook e browser</h2>
+<div class="q"><b>Claude in Chrome non è collegato. Come procedo con Outlook e con i risultati dei sondaggi?</b>
+<label><input type="radio" name="browser" value="Riattivo l'estensione Chrome e ti dico"> Riattivo l'estensione Chrome (pannello Claude, accesso) e ti dico</label>
+<label><input type="radio" name="browser" value="Usa il browser integrato nell'app"> Usa il browser integrato nell'app (dovrò accedere lì a Outlook)</label></div>
+<div class="q"><b>Quale casella Outlook controllo?</b>
+<label><input type="checkbox" data-k="ol_scuola"> Mail scolastica (edu.ti.ch / samtrevano.ch)</label>
+<label><input type="checkbox" data-k="ol_paritetica"> paritetica@samtrevano.ch</label>
+<input type="text" data-k="ol_altro" placeholder="altro indirizzo"></div>
+<div class="q"><b>Cartelle per organizzare la posta (proposta di partenza, le affino dopo aver visto le mail)</b>
+<label><input type="checkbox" data-k="cart_eco" checked> Eco Comitato (verbali, convocazioni, Eco-Schools)</label>
+<label><input type="checkbox" data-k="cart_ass" checked> Assemblea paritetica</label>
+<label><input type="checkbox" data-k="cart_ga" checked> GA (attività, relatori, licei)</label>
+<label><input type="checkbox" data-k="cart_capi" checked> Capilab / informatica</label>
+<label><input type="checkbox" data-k="cart_dir" checked> Direzione</label>
+<label><input type="checkbox" data-k="cart_scuola" checked> Scuola – lezioni e docenti</label>
+<label><input type="checkbox" data-k="cart_news"> Newsletter / avvisi automatici</label>
+<input type="text" data-k="cart_altre" placeholder="altre cartelle che vuoi"></div>
+<div class="q"><b>Spostamento delle mail nelle cartelle</b>
+<label><input type="radio" name="ol_sposta" value="Prima mi mostri l'elenco, poi sposti"> Prima mi mostri l'elenco mail → cartella, poi sposti</label>
+<label><input type="radio" name="ol_sposta" value="Sposta direttamente"> Sposta direttamente secondo le cartelle scelte</label></div>
+
+<h2>6. GA (decisioni aperte del 22.10)</h2>
+<div class="q"><b>Regali ai relatori?</b>
+<label><input type="radio" name="regali" value="Sì (pagati con la buvette o con il budget)"> Sì</label>
+<label><input type="radio" name="regali" value="No (buvette condivisa senza soldi)"> No</label>
+<label><input type="radio" name="regali" value="Decide il gruppo GA"> Decide il gruppo GA</label></div>
+<div class="q"><b>Aula lettura: chi lo chiede a Moscatelli (o a un altro docente)?</b>
+<input type="text" data-k="aula_lettura"></div>
+
+<h2>7. Sito e ralph</h2>
+<div class="q"><b>Quando ralph finisce e il controllo passa: faccio push su GitHub?</b>
+<label><input type="radio" name="push" value="Sì, push dopo il controllo"> Sì, push dopo il controllo</label>
+<label><input type="radio" name="push" value="No, solo commit locali"> No, solo commit locali</label></div>
+<div class="q"><b>Altro da dirmi</b><textarea data-k="altro"></textarea></div>
+
+<pre id="out"></pre>
+</main>
+<div class="bar">
+  <button id="copy">Copia le risposte</button>
+  <button class="sec" id="reset">Svuota</button>
+  <span class="ok" id="msg"></span>
+</div>
+<script>
+const PDF = [
+  ['Eco · Richiesta di uso dell\'aula Eco (Spazio A-113)', 'eco_richiesta'],
+  ['Eco · Accettazione / rifiuto della richiesta', 'eco_accettazione'],
+  ['Eco · Regolamento dello Spazio (versione approvata)', 'eco_regolamento'],
+  ['Eco · Organigramma e turni dei gestori (da appendere)', 'eco_turni'],
+  ['Eco · Registro di passaggio consegne', 'eco_consegne'],
+  ['Eco · Segnalazione / sospensione dell\'accesso', 'eco_sospensione'],
+  ['Eco · Lista materiali / richiesta d\'acquisto', 'eco_materiali'],
+  ['Eco · Convocazione e ordine del giorno riunione', 'eco_convocazione'],
+  ['Eco · Verbale riunione (righe I/C/D/E)', 'eco_verbale'],
+  ['Eco · Risultati sondaggio (report)', 'eco_sondaggio'],
+  ['Eco · Piano d\'azione Eco-Schools (per il portfolio)', 'eco_piano'],
+  ['GA · Riepilogo proposta attività (ricevuta per chi propone)', 'ga_proposta'],
+  ['GA · Conferma approvazione attività (blocco, aula, posti)', 'ga_approvazione'],
+  ['GA · Lettera / invito ai relatori', 'ga_invito_relatori'],
+  ['GA · Programma personale dell\'allievo', 'ga_programma_allievo'],
+  ['GA · Lista partecipanti + foglio presenze per attività', 'ga_presenze'],
+  ['GA · Programma generale e aule (info point, affissione)', 'ga_programma_generale'],
+  ['GA · Richiesta materiali / acquisti alla direzione (con totale)', 'ga_acquisti'],
+  ['GA · Modulo rimborso spese (scontrini)', 'ga_rimborso'],
+  ['GA · Attestato / ringraziamento ai relatori', 'ga_attestato'],
+  ['GA · Riepilogo finale per la direzione (numeri, presenze)', 'ga_riepilogo'],
+  ['Assemblea · Convocazione e ordine del giorno', 'ass_convocazione'],
+  ['Assemblea · Lista presenze da firmare', 'ass_presenze'],
+  ['Assemblea · Verbale (righe I/C/D/E)', 'ass_verbale'],
+  ['Tornei · Calendario e tabellone', 'tor_tabellone'],
+  ['Tornei · Referto di partita per l\'arbitro', 'tor_referto'],
+  ['Tornei · Diploma per i vincitori', 'tor_diploma'],
+  ['Generale · Invito di registrazione docente/relatore con QR code', 'gen_invito_qr'],
+  ['Generale · Locandina con QR code del sito', 'gen_locandina'],
+  ['Festa fine anno · Richiesta budget / preventivo', 'festa_budget'],
+];
+const tb = document.querySelector('#pdf tbody');
+PDF.forEach(([t, k]) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${t}</td>` + ['Sì','Dopo','No'].map(v => `<td class="c"><input type="radio" name="pdf_${k}" value="${v}" aria-label="${t}: ${v}"></td>`).join('');
+  tb.appendChild(tr);
+});
+const KEY = 'decisioni_2026-11-12';
+const all = () => [...document.querySelectorAll('input, textarea')];
+function save() {
+  const s = {};
+  all().forEach(el => {
+    if (el.type === 'radio') { if (el.checked) s[el.name] = el.value; }
+    else if (el.type === 'checkbox') s[el.dataset.k] = el.checked;
+    else s[el.dataset.k] = el.value;
+  });
+  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+  return s;
+}
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (s) all().forEach(el => {
+    if (el.type === 'radio') el.checked = s[el.name] === el.value;
+    else if (el.type === 'checkbox') { if (el.dataset.k in s) el.checked = s[el.dataset.k]; }
+    else if (s[el.dataset.k] != null) el.value = s[el.dataset.k];
+  });
+} catch (e) {}
+document.addEventListener('input', save);
+function text() {
+  const lines = ['RISPOSTE DECISIONI (12.11.2026)'];
+  document.querySelectorAll('h2, .q').forEach(n => {
+    if (n.tagName === 'H2') { lines.push('', '## ' + n.textContent); return; }
+    const q = n.querySelector('b').textContent;
+    if (n.querySelector('#pdf')) {
+      const g = { 'Sì': [], 'Dopo': [], 'No': [] };
+      PDF.forEach(([t, k]) => { const c = n.querySelector(`input[name="pdf_${k}"]:checked`); if (c) g[c.value].push(t); });
+      lines.push('- ' + q);
+      for (const v in g) if (g[v].length) lines.push(`  ${v}: ` + g[v].join(' | '));
+      return;
+    }
+    const vals = [];
+    n.querySelectorAll('input[type=radio]:checked').forEach(r => vals.push(r.value));
+    n.querySelectorAll('input[type=checkbox]:checked').forEach(c => vals.push(c.parentElement.textContent.trim()));
+    n.querySelectorAll('textarea, input[type=text]').forEach(t => { if (t.value.trim()) vals.push(t.value.trim()); });
+    if (vals.length) lines.push('- ' + q + ' → ' + vals.join('; '));
+  });
+  return lines.join('\n');
+}
+document.getElementById('copy').onclick = async () => {
+  save();
+  const t = text();
+  const msg = document.getElementById('msg');
+  try { await navigator.clipboard.writeText(t); msg.textContent = 'Copiato: incollalo in chat'; }
+  catch (e) { const o = document.getElementById('out'); o.textContent = t; o.style.display = 'block'; o.scrollIntoView(); msg.textContent = 'Copia il testo qui sopra'; }
+};
+document.getElementById('reset').onclick = () => {
+  if (!confirm('Svuotare tutte le risposte?')) return;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  location.reload();
+};
+</script>
+</body>
+</html>
