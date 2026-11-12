@@ -87,8 +87,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 005; logica in src/auth/registration.ts, pagina /registrazione in src/auth/router.ts. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {

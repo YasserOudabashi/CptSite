@@ -48,3 +48,9 @@
 - `src/auth/guard.ts`: `requireRole(role)` legge `req.user` (da impostare con la sessione in US-007; senza utente 401, ruolo mancante 403). US-009 lo sostituirà con `can()`. `adminRouter(pool)` è montato in `src/index.ts` e per ora senza sessione è irraggiungibile in produzione.
 - Verifica in browser NON fatta (manca il login): pagina e permessi testati via HTTP in `tests/student-list.test.ts`. Rifarla dopo US-007.
 - Test 22/22 verdi su Linux. In questa sandbox i node_modules sono quelli di Windows: ho provato in una copia in /tmp con `npm ci` (non toccare i node_modules reali).
+
+### US-005 — Registrazione passo 1 (2026-11-12)
+- Migrazione `005_registration.sql`: `registration_codes` (un solo codice in attesa per ID, con nome/cognome/classe, hash, scadenza 24 h) e `registration_attempts` (limite 5/ora per ID e per IP).
+- `src/auth/registration.ts` → `startRegistration`: US-006 deve leggere `registration_codes` (verificare con `verifySecret`, controllare `expires_at`, creare l'utente con ruolo allievo e cancellare la riga). "Richiedi nuovo codice" = rifare il passo 1.
+- Il codice è salvato prima dell'invio e cancellato se `sendPersonalCode` lancia `MailSendError`. Ogni richiesta conta come tentativo (anche se valida), l'IP viene da `req.ip` (se dietro proxy: `app.set('trust proxy')` in produzione).
+- `authRouter(pool)` montato in `src/index.ts` (GET/POST /registrazione). Verifica in browser NON fatta (test via HTTP in `tests/registration.test.ts`). Test 29/29 su Linux (copia in /tmp con `npm ci`).
