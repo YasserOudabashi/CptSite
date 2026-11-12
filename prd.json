@@ -205,8 +205,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 008_invites.sql; src/admin/invites.ts; pagina /admin/inviti in adminRouter e /invito/:token in authRouter. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {

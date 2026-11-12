@@ -92,3 +92,9 @@
 - `src/admin/users.ts`: `searchUsers` (nome, cognome o ID, ILIKE, max 200), `addUserRole`, `dropUserRole` (transazione con `FOR UPDATE` sulle righe resp_sito: l'ultimo Responsabile sito non si toglie, neanche con richieste simultanee).
 - Pagine GET `/admin/utenti?q=` e POST `/admin/utenti/ruolo/aggiungi|togli` in `adminRouter`, protette da `requireCan('admin.users')` (il `router.use('/admin')` esistente richiede ancora `admin.studentList`: stessi ruoli, solo resp_sito). Gli errori (ruolo non valido, ultimo resp_sito) tornano come messaggio nella pagina.
 - Test in `tests/admin-users.test.ts`; 59/59 verdi (copia in /tmp/ga). Verifica in browser non fatta.
+
+### US-012 — Invito di docenti e relatori (2026-11-12)
+- Migrazione `008_invites.sql`: `invites` (nel DB solo lo sha256 del token, scadenza 14 giorni, `used_at`). `src/admin/invites.ts`: `createInvite` (tipo docente/relatore, nome, cognome, e-mail; rifiuta e-mail già registrate), `findValidInvite`, `acceptInvite` (UPDATE condizionato = link monouso anche con richieste simultanee; crea utente con login_id = e-mail, senza classe, col ruolo dell'invito), `listInvites`.
+- Pagina `/admin/inviti` (permesso `admin.invites`, mostra il link da copiare: usa `SITE_URL` se impostato, altrimenti l'host della richiesta; il sito non invia la mail) e `/invito/:token` pubblica (scaduto/usato/inesistente = 410 con messaggio chiaro).
+- Nessun concetto di "conferma" docente/relatore oltre al ruolo: il ruolo è assegnato subito.
+- Test in `tests/invites.test.ts`; 62/62 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.

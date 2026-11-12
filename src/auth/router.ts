@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Pool } from 'pg';
 import { login, logout, readCookie, COOKIE, sessionCookie } from './session';
 import { completePasswordReset, requestPasswordReset, ResetResult } from './passwordReset';
+import { acceptInvite, findValidInvite } from '../admin/invites';
 import { completeRegistration, CompleteResult, startRegistration, StartResult } from './registration';
 
 const esc = (s: string) =>
@@ -180,6 +181,58 @@ ${body}
       res.status(r.reason === 'rate_limited' ? 429 : 400).send(
         resetCodePage(`<p><strong>${RESET_MESSAGES[r.reason]}</strong></p>`, loginId),
       );
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const INVITE_BAD =
+    '<p>Questo invito non è valido: è scaduto o è già stato usato. Chiedi un nuovo invito al Responsabile del sito.</p>';
+  const INVITE_MESSAGES = {
+    password_short: 'La password deve avere almeno 10 caratteri.',
+    password_mismatch: 'Le due password non coincidono.',
+    exists: 'Esiste già un account con questo indirizzo: usa il recupero password.',
+  } as const;
+
+  const invitePage = (token: string, inv: { first_name: string; last_name: string; email: string; role_code: string }, flash = '') =>
+    shell(
+      'Registrazione su invito',
+      `${flash}<p>${esc(inv.first_name)} ${esc(inv.last_name)} · ${inv.role_code === 'docente' ? 'Docente' : 'Relatore'}<br>ID: <strong>${esc(inv.email)}</strong></p>
+<form method="post" action="/invito/${encodeURIComponent(token)}">
+<p><label>Password (almeno 10 caratteri)<br><input type="password" name="password" required minlength="10" autocomplete="new-password"></label></p>
+<p><label>Ripeti la password<br><input type="password" name="password2" required minlength="10" autocomplete="new-password"></label></p>
+<p><button>Attiva l’account</button></p></form>`,
+    );
+
+  router.get('/invito/:token', async (req, res, next) => {
+    try {
+      const inv = await findValidInvite(pool, req.params.token);
+      if (!inv) {
+        res.status(410).send(shell('Invito non valido', INVITE_BAD));
+        return;
+      }
+      res.send(invitePage(req.params.token, inv));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/invito/:token', async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const inv = await findValidInvite(pool, token);
+      if (!inv) {
+        res.status(410).send(shell('Invito non valido', INVITE_BAD));
+        return;
+      }
+      const r = await acceptInvite(pool, token, String(req.body?.password ?? ''), String(req.body?.password2 ?? ''));
+      if (r.ok) {
+        res.send(shell('Account attivato', '<p>Ora puoi <a href="/login">accedere</a> con la tua e-mail e la password scelta.</p>'));
+      } else if (r.reason === 'invalid') {
+        res.status(410).send(shell('Invito non valido', INVITE_BAD));
+      } else {
+        res.status(400).send(invitePage(token, inv, `<p><strong>${INVITE_MESSAGES[r.reason]}</strong></p>`));
+      }
     } catch (e) {
       next(e);
     }

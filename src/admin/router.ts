@@ -8,6 +8,7 @@ import {
   schoolDomain,
   setGeneralCode,
 } from './studentList';
+import { INVITE_ROLES, createInvite, listInvites } from './invites';
 import { ROLE_CODES, addUserRole, dropUserRole, searchUsers } from './users';
 
 const esc = (s: string) =>
@@ -69,6 +70,29 @@ ${esc(ROLE_LABEL[r] ?? r)} <button title="Togli ruolo">×</button></form>`,
 ${flash}
 <form method="get" action="/admin/utenti"><p><input type="search" name="q" value="${esc(q)}" placeholder="Nome o ID"> <button>Cerca</button></p></form>
 <table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Utente</th><th>Ruoli</th><th></th></tr>${rows || '<tr><td colspan="3">Nessun utente trovato.</td></tr>'}</table>
+</body></html>`;
+}
+
+async function invitesPage(pool: Pool, flash = ''): Promise<string> {
+  const rows = (await listInvites(pool))
+    .map((i) => {
+      const stato = i.used_at ? 'usato' : i.expires_at < new Date() ? 'scaduto' : 'valido';
+      return `<tr><td>${esc(i.last_name)} ${esc(i.first_name)}<br><small>${esc(i.email)}</small></td><td>${esc(ROLE_LABEL[i.role_code])}</td><td>${stato}</td></tr>`;
+    })
+    .join('');
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Inviti</title></head><body>
+<h1>Inviti di docenti e relatori</h1>
+${flash}
+<form method="post" action="/admin/inviti">
+<p><label>Tipo <select name="role">${INVITE_ROLES.map((r) => `<option value="${r}">${esc(ROLE_LABEL[r])}</option>`).join('')}</select></label></p>
+<p><label>Nome <input name="firstName" required></label></p>
+<p><label>Cognome <input name="lastName" required></label></p>
+<p><label>E-mail (sarà il suo ID) <input type="email" name="email" required></label></p>
+<p><button>Crea invito</button></p></form>
+<p>Il link è monouso e scade dopo 14 giorni. Il sito non invia la mail: copia il link e mandalo tu.</p>
+<h2>Inviti creati</h2>
+<table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Persona</th><th>Tipo</th><th>Stato</th></tr>${rows || '<tr><td colspan="3">Nessun invito.</td></tr>'}</table>
 </body></html>`;
 }
 
@@ -137,6 +161,38 @@ export function adminRouter(pool: Pool): Router {
       }
     });
   }
+
+  router.get('/admin/inviti', requireCan('admin.invites'), async (_req, res, next) => {
+    try {
+      res.send(await invitesPage(pool));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/admin/inviti', requireCan('admin.invites'), async (req, res, next) => {
+    try {
+      const b = req.body ?? {};
+      let flash: string;
+      try {
+        const token = await createInvite(pool, {
+          role: String(b.role ?? ''),
+          firstName: String(b.firstName ?? ''),
+          lastName: String(b.lastName ?? ''),
+          email: String(b.email ?? ''),
+        });
+        const base = (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+        const link = `${base}/invito/${token}`;
+        flash = `<p><strong>Invito creato. Copia il link (valido 14 giorni, una sola volta):</strong></p>
+<p><input readonly size="60" value="${esc(link)}" onclick="this.select()"></p>`;
+      } catch (e) {
+        flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+      }
+      res.send(await invitesPage(pool, flash));
+    } catch (e) {
+      next(e);
+    }
+  });
 
   return router;
 }
