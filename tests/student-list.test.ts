@@ -57,7 +57,7 @@ test('codice generale salvato hashato e verificabile', async () => {
   assert.equal(await checkGeneralCode(pool, 'sbagliato'), false);
 });
 
-test('pagina admin: 401 senza accesso, 403 senza ruolo, 200 per resp_sito', async () => {
+test('pagina admin: redirect al login senza accesso, 403 senza ruolo, 200 per resp_sito', async () => {
   let user: express.Request['user'];
   const app = express();
   app.use(express.urlencoded({ extended: true }));
@@ -72,7 +72,9 @@ test('pagina admin: 401 senza accesso, 403 senza ruolo, 200 per resp_sito', asyn
   const base = `http://localhost:${(server.address() as { port: number }).port}`;
   try {
     user = undefined;
-    assert.equal((await fetch(`${base}/admin/studenti`)).status, 401);
+    const anon = await fetch(`${base}/admin/studenti`, { redirect: 'manual' });
+    assert.equal(anon.status, 302);
+    assert.equal(anon.headers.get('location'), '/login');
     user = { id: 1, roles: ['resp_ga'] };
     assert.equal((await fetch(`${base}/admin/studenti`)).status, 403);
     user = { id: 1, roles: ['allievo', 'resp_sito'] };

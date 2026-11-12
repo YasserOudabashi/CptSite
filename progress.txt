@@ -60,3 +60,11 @@
 - Limite 5 tentativi/ora per ID sui codici sbagliati (kind `verify` in `registration_attempts`), perché il codice ha solo 8 cifre.
 - Pagina GET/POST `/registrazione/codice` in `src/auth/router.ts`; sul codice errato/scaduto c'è il link a `/registrazione` (nuovo codice = rifare il passo 1). Dopo l'attivazione non c'è ancora login (US-007).
 - Test in `tests/registration-step2.test.ts`; 34/34 verdi (copia in /tmp con `npm ci`, node_modules reali sono di Windows). Verifica in browser non fatta.
+
+### US-007 — Login e logout (2026-11-12)
+- Migrazione `006_sessions.sql`: `sessions` (token casuale nel cookie, nel DB solo lo sha256; scadenza 12 h) e `login_failures` (blocco: 5 errori in 15 minuti per ID, anche con password giusta; azzerati a login riuscito).
+- `src/auth/session.ts`: `login`, `logout`, `sessionMiddleware(pool)` (imposta `req.user = {id, roles}`; montato in `src/index.ts` PRIMA dei router), `sessionCookie` (HttpOnly; Secure; SameSite=Lax). Pagine GET/POST `/login`, POST `/logout` nel router auth. Messaggio di errore identico per ID inesistente e password errata.
+- `requireRole` ora fa redirect 302 a `/login` se non autenticati (prima 401); test di student-list aggiornato. US-009 (`can()`) deve mantenere questo comportamento per le pagine HTML (403 resta per chi è loggato senza permesso).
+- Cookie `Secure`: in sviluppo funziona su http://localhost, non su altri host http.
+- Dopo il login redirect a `/`. Il reset password (US-008) deve cancellare le righe di `sessions` dell'utente.
+- Test in `tests/login.test.ts`; 37/37 verdi (copia in /tmp/ga con `npm ci`, node_modules reali sono di Windows). Verifica in browser non fatta.

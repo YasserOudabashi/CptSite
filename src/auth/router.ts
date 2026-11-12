@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
+import { login, logout, readCookie, COOKIE, sessionCookie } from './session';
 import { completeRegistration, CompleteResult, startRegistration, StartResult } from './registration';
 
 const esc = (s: string) =>
@@ -53,6 +54,48 @@ ${flash}
 
 export function authRouter(pool: Pool): Router {
   const router = Router();
+
+  const loginPage = (flash = '', loginId = '') => `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Accedi</title></head><body>
+<h1>Accedi</h1>
+${flash}
+<form method="post" action="/login">
+<p><label>ID<br><input name="loginId" value="${esc(loginId)}" required autocomplete="username"></label></p>
+<p><label>Password<br><input type="password" name="password" required autocomplete="current-password"></label></p>
+<p><button>Accedi</button></p></form>
+<p><a href="/registrazione">Registrati</a></p>
+</body></html>`;
+
+  router.get('/login', (_req, res) => {
+    res.send(loginPage());
+  });
+
+  router.post('/login', async (req, res, next) => {
+    try {
+      const loginId = String(req.body?.loginId ?? '');
+      const r = await login(pool, loginId, String(req.body?.password ?? ''));
+      if (r.ok) {
+        res.setHeader('Set-Cookie', sessionCookie(r.token));
+        res.redirect(303, '/');
+        return;
+      }
+      const msg = r.reason === 'locked' ? 'Troppi tentativi falliti. Riprova tra 15 minuti.' : 'ID o password non validi.';
+      res.status(r.reason === 'locked' ? 429 : 401).send(loginPage(`<p><strong>${msg}</strong></p>`, loginId));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/logout', async (req, res, next) => {
+    try {
+      const token = readCookie(req, COOKIE);
+      if (token) await logout(pool, token);
+      res.setHeader('Set-Cookie', sessionCookie('', 0));
+      res.redirect(303, '/login');
+    } catch (e) {
+      next(e);
+    }
+  });
 
   router.get('/registrazione', (_req, res) => {
     res.send(page());

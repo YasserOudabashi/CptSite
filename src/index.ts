@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { app } from './app';
 import { adminRouter } from './admin/router';
 import { authRouter } from './auth/router';
+import { sessionMiddleware } from './auth/session';
 import { runMigrations } from './db/migrate';
 import { seed } from './db/seed';
 import { processMailQueue, startMailWorker } from './mail/queue';
@@ -18,6 +19,7 @@ async function start() {
   // Coda mail a lotti: riprende all'avvio e poi ogni 10 minuti (anche il giorno dopo il limite).
   processMailQueue(pool).catch((err) => console.error('Coda mail:', err));
   startMailWorker(pool);
+  app.use(sessionMiddleware(pool));
   app.use(authRouter(pool));
   app.use(adminRouter(pool));
   app.listen(Number(PORT), () => {

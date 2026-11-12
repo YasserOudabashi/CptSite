@@ -121,8 +121,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 006; src/auth/session.ts (login, logout, sessionMiddleware); pagine /login e POST /logout in src/auth/router.ts. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {
