@@ -113,6 +113,7 @@ test('pagina /registrazione/codice via HTTP', async () => {
     assert.equal(ok.status, 200);
     assert.match(await ok.text(), /Account attivato/);
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

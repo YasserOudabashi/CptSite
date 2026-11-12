@@ -71,6 +71,7 @@ test('requireCan: redirect, 403 HTML, 403 JSON, ok', async () => {
     const ok = await fetch(url, { headers: { 'x-roles': 'resp_ga' } });
     assert.equal(ok.status, 200);
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

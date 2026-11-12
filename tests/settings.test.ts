@@ -98,6 +98,7 @@ test('pagina impostazioni e QR: solo Responsabile sito, QR è un PNG', async () 
     assert.match(await res.text(), /Salvato/);
     assert.equal((await listBlocks(pool))[2].start, '10:20');
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

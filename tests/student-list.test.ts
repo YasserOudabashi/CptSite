@@ -87,6 +87,7 @@ test('pagina admin: redirect al login senza accesso, 403 senza ruolo, 200 per re
     const html = await res.text();
     assert.match(html, /Riga 2: bad/);
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

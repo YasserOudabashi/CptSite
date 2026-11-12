@@ -119,6 +119,7 @@ test('pagina /registrazione via HTTP', async () => {
     assert.equal(ok.status, 200);
     assert.match(await ok.text(), /Controlla la tua mail/);
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

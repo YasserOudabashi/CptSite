@@ -90,6 +90,7 @@ test('pagine: solo Responsabile sito crea inviti; il link porta alla registrazio
     assert.match(await again.text(), /scaduto o è già stato usato/);
     assert.equal((await fetch(`${base}/invito/inesistente`)).status, 410);
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

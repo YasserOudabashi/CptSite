@@ -6,7 +6,7 @@
     "start": "node --require tsx/cjs src/index.ts",
     "dev": "node --watch --require tsx/cjs src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --require tsx/cjs --test --test-concurrency=1 --test-force-exit tests/*.test.ts"
+    "test": "node --require tsx/cjs --test --test-concurrency=1 tests/*.test.ts"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",

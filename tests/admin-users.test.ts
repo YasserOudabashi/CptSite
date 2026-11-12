@@ -86,6 +86,7 @@ test('pagina: solo Responsabile sito; aggiungi e togli via HTTP', async () => {
     assert.match(html, /Ruoli aggiornati/);
     assert.ok(!(await getUserRoles(pool, anna)).includes('relatore'));
   } finally {
-    server.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
   }
 });

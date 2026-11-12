@@ -32,7 +32,8 @@ before(async () => {
 });
 
 after(async () => {
-  server.close();
+  server.closeAllConnections();
+  await new Promise((r) => server.close(r));
   await stopDb();
 });
 

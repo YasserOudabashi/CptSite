@@ -68,7 +68,7 @@ export async function setGeneralCode(pool: Pool, code: string): Promise<void> {
   await pool.query(
     `INSERT INTO app_settings (key, value) VALUES ('general_code_hash', $1)
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-    [await hashSecret(code)],
+    [await hashSecret(code.trim())],
   );
 }
 
@@ -79,5 +79,5 @@ export async function hasGeneralCode(pool: Pool): Promise<boolean> {
 
 export async function checkGeneralCode(pool: Pool, code: string): Promise<boolean> {
   const { rows } = await pool.query(`SELECT value FROM app_settings WHERE key = 'general_code_hash'`);
-  return rows.length === 1 && verifySecret(code, rows[0].value);
+  return rows.length === 1 && verifySecret(code.trim(), rows[0].value);
 }

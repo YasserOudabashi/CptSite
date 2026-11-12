@@ -105,3 +105,16 @@
 - Pagina `/admin/impostazioni` (permesso `admin.settings`) e `/admin/impostazioni/qr.png`; l'indirizzo nel QR e' `SITE_URL` se impostato, altrimenti l'host della richiesta: in produzione impostare `SITE_URL`. QR generato con il pacchetto `qrcode` (nessun servizio esterno): nuova dipendenza, serve `npm install`.
 - Nelle tabelle HTML i form di riga usano l'attributo `form=` (un <form> dentro <tr> non e' HTML valido).
 - Test in `tests/settings.test.ts`; 66/66 verdi (copia in /tmp/ga). Verifica in browser non fatta.
+
+### Revisione Fase 1 (Fable 5.2, 12.11.2026) — già sistemato
+- `npm test` senza --test-force-exit: su Windows faceva crashare Node (UV_HANDLE_CLOSING). Ora la suite esce da sola (66/66). I test chiudono il server con closeAllConnections() + await close.
+- `app.set('trust proxy', 1)`; in produzione senza SMTP_HOST il server si ferma all'avvio (prima usava in silenzio il trasporto finto); codice generale con trim.
+
+### Revisione Fase 1 — DA FARE (Nota del revisore, 12.11)
+- [Nota del revisore] Rate limit e blocco login non atomici (src/auth/session.ts, registration.ts, passwordReset.ts): inserire la riga del tentativo PRIMA della verifica e contare dopo l'INSERT; al successo cancellarla. Test con 20 richieste parallele.
+- [Nota del revisore] Blocco account da parte di terzi: contare i fallimenti per (ID, IP) + un limite largo per solo IP anche sul login.
+- [Nota del revisore] CSRF: middleware in app.ts che rifiuta i POST con Origin diverso da SITE_URL. SITE_URL obbligatoria in produzione (link invito e QR).
+- [Nota del revisore] Tempi uguali per ID esistente/inesistente (hash fittizio; mail di recupero senza await).
+- [Nota del revisore] Pulizia periodica di sessions, login_failures, registration_attempts e codici scaduti nel worker mail.
+- [Nota del revisore] Minori: avviso in Impostazioni che cambiare anno svuota l'elenco ID; errore leggibile per date impossibili; link a /login in "Account attivato"; togliere requireRole (codice morto); 401 JSON invece di 302 per richieste JSON; pagina 403 con layout; rimozione di un ID dall'elenco.
+- APERTO (decide Yasser): il limite per IP di registrazione/recupero (5/ora) blocca tutta la scuola sullo stesso Wi-Fi. Proposta: 300/ora per IP da variabile d'ambiente, 5/ora per ID.

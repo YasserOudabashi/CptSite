@@ -56,8 +56,10 @@ let current: MailTransport | undefined;
 // SMTP vero solo in produzione con SMTP_HOST impostato; altrimenti trasporto finto.
 export function getTransport(): MailTransport {
   if (!current) {
-    const real = process.env.NODE_ENV === 'production' && !!process.env.SMTP_HOST;
-    current = real ? new SmtpTransport() : new FakeTransport();
+    const prod = process.env.NODE_ENV === 'production';
+    // In produzione senza SMTP le mail non partirebbero in silenzio: meglio fermarsi subito.
+    if (prod && !process.env.SMTP_HOST) throw new Error('SMTP_HOST mancante: in produzione serve un server SMTP');
+    current = prod ? new SmtpTransport() : new FakeTransport();
   }
   return current;
 }
