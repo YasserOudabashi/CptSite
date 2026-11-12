@@ -68,3 +68,9 @@
 - Cookie `Secure`: in sviluppo funziona su http://localhost, non su altri host http.
 - Dopo il login redirect a `/`. Il reset password (US-008) deve cancellare le righe di `sessions` dell'utente.
 - Test in `tests/login.test.ts`; 37/37 verdi (copia in /tmp/ga con `npm ci`, node_modules reali sono di Windows). Verifica in browser non fatta.
+
+### US-008 — Recupero password (2026-11-12)
+- Migrazione `007_password_reset.sql`: `password_resets` (un codice per utente, hash, scadenza 30 minuti). `src/auth/passwordReset.ts`: `requestPasswordReset` (risposta identica se l'ID non esiste; 5 richieste/ora per ID e per IP; codice cancellato se la mail fallisce) e `completePasswordReset` (monouso via DELETE in transazione, cancella le `sessions` dell'utente e i `login_failures`; 5 verifiche/ora per ID).
+- Pagine GET/POST `/recupero-password` e `/recupero-password/codice` nel router auth, link dalla pagina di login. Il Resp. sito creato dal seed (password NULL) imposta la password da qui.
+- I tentativi usano la tabella `registration_attempts` con kind `reset-id`, `reset-ip`, `reset-verify`.
+- Test in `tests/password-reset.test.ts`; 41/41 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.

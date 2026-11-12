@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
 import { login, logout, readCookie, COOKIE, sessionCookie } from './session';
+import { completePasswordReset, requestPasswordReset, ResetResult } from './passwordReset';
 import { completeRegistration, CompleteResult, startRegistration, StartResult } from './registration';
 
 const esc = (s: string) =>
@@ -63,7 +64,7 @@ ${flash}
 <p><label>ID<br><input name="loginId" value="${esc(loginId)}" required autocomplete="username"></label></p>
 <p><label>Password<br><input type="password" name="password" required autocomplete="current-password"></label></p>
 <p><button>Accedi</button></p></form>
-<p><a href="/registrazione">Registrati</a></p>
+<p><a href="/registrazione">Registrati</a> · <a href="/recupero-password">Password dimenticata?</a></p>
 </body></html>`;
 
   router.get('/login', (_req, res) => {
@@ -92,6 +93,93 @@ ${flash}
       if (token) await logout(pool, token);
       res.setHeader('Set-Cookie', sessionCookie('', 0));
       res.redirect(303, '/login');
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const shell = (title: string, body: string) => `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body>
+<h1>${title}</h1>
+${body}
+</body></html>`;
+
+  const resetRequestPage = (flash = '', loginId = '') =>
+    shell(
+      'Recupero password',
+      `${flash}<form method="post" action="/recupero-password">
+<p><label>ID<br><input name="loginId" value="${esc(loginId)}" required autocomplete="username"></label></p>
+<p><button>Ricevi il codice</button></p></form>
+<p><a href="/login">Torna all’accesso</a></p>`,
+    );
+
+  const resetCodePage = (flash = '', loginId = '') =>
+    shell(
+      'Scegli la nuova password',
+      `${flash}<form method="post" action="/recupero-password/codice">
+<p><label>ID<br><input name="loginId" value="${esc(loginId)}" required autocomplete="username"></label></p>
+<p><label>Codice ricevuto per mail<br><input name="code" required autocomplete="one-time-code"></label></p>
+<p><label>Nuova password (almeno 10 caratteri)<br><input type="password" name="password" required minlength="10" autocomplete="new-password"></label></p>
+<p><label>Ripeti la password<br><input type="password" name="password2" required minlength="10" autocomplete="new-password"></label></p>
+<p><button>Cambia password</button></p></form>`,
+    );
+
+  const RESET_MESSAGES: Record<Exclude<ResetResult, { ok: true }>['reason'], string> = {
+    rate_limited: 'Troppi tentativi. Riprova tra un’ora.',
+    bad_code: 'Codice non valido o scaduto. <a href="/recupero-password">Richiedi un nuovo codice</a>.',
+    password_short: 'La password deve avere almeno 10 caratteri.',
+    password_mismatch: 'Le due password non coincidono.',
+  };
+
+  router.get('/recupero-password', (_req, res) => {
+    res.send(resetRequestPage());
+  });
+
+  router.post('/recupero-password', async (req, res, next) => {
+    try {
+      const loginId = String(req.body?.loginId ?? '');
+      const r = await requestPasswordReset(pool, loginId, req.ip ?? 'unknown');
+      if (r.ok) {
+        res.send(
+          shell(
+            'Controlla la tua mail',
+            `<p>Se l’ID esiste, ti abbiamo inviato un codice valido 30 minuti.</p>
+<p><a href="/recupero-password/codice">Inserisci il codice e scegli la nuova password</a></p>`,
+          ),
+        );
+        return;
+      }
+      const msg =
+        r.reason === 'rate_limited'
+          ? 'Troppi tentativi. Riprova tra un’ora.'
+          : 'Non siamo riusciti a inviare la mail. Riprova più tardi.';
+      res.status(r.reason === 'rate_limited' ? 429 : 500).send(resetRequestPage(`<p><strong>${msg}</strong></p>`, loginId));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/recupero-password/codice', (_req, res) => {
+    res.send(resetCodePage());
+  });
+
+  router.post('/recupero-password/codice', async (req, res, next) => {
+    try {
+      const b = req.body ?? {};
+      const loginId = String(b.loginId ?? '');
+      const r = await completePasswordReset(pool, {
+        loginId,
+        code: String(b.code ?? ''),
+        password: String(b.password ?? ''),
+        password2: String(b.password2 ?? ''),
+      });
+      if (r.ok) {
+        res.send(shell('Password cambiata', '<p>Ora puoi <a href="/login">accedere</a> con la nuova password.</p>'));
+        return;
+      }
+      res.status(r.reason === 'rate_limited' ? 429 : 400).send(
+        resetCodePage(`<p><strong>${RESET_MESSAGES[r.reason]}</strong></p>`, loginId),
+      );
     } catch (e) {
       next(e);
     }

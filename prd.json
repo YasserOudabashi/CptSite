@@ -137,8 +137,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 007; logica in src/auth/passwordReset.ts, pagine /recupero-password e /recupero-password/codice. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {
