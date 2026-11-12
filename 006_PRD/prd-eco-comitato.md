@@ -173,7 +173,8 @@ I ruoli si sommano (unione dei permessi). Nuovi o precisati per l'Eco:
 - [ ] Azioni: approva, approva con modifiche, respingi; la motivazione è obbligatoria in caso di modifica o rifiuto (art. 5) ed è visibile al proponente
 - [ ] Le attività approvate compaiono per tutti; chi propone diventa Organizzatore per quell'attività
 - [ ] Storico delle decisioni (chi, quando, motivo)
-- [ ] Solo sotto-ruolo Attività e Resp. sito
+- [ ] Possono decidere tutti i membri dell'Eco Comitato (decisione 12.11: Resp. Eco, Coordinatore Eco-Schools, Gestore di turno e ogni membro) e il Resp. sito
+- [ ] Ogni nuova richiesta crea una notifica nel sito soprattutto al Gestore di turno (in evidenza nella sua Home), visibile anche agli altri membri; nessuna mail (FR-E9)
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
@@ -186,7 +187,7 @@ I ruoli si sommano (unione dei permessi). Nuovi o precisati per l'Eco:
 - [ ] All'invio di una proposta (ECO-009) il sito genera il PDF "Richiesta di uso dello Spazio": numero di protocollo, data, proponente (nome, classe/ruolo), titolo, tipo, data e orario, partecipanti previsti, materiali richiesti
 - [ ] Alla decisione (ECO-010) il sito genera il PDF "Accettazione" o "Rifiuto": stessi dati + esito, chi ha deciso, quando, motivazione (obbligatoria se modifica o rifiuto), eventuali modifiche rispetto alla richiesta
 - [ ] I PDF si scaricano dalla pagina della proposta (proponente, chi approva, Resp. sito) e restano archiviati con la proposta, anche se poi viene modificata (nuova versione, la vecchia resta)
-- [ ] Un solo modello grafico condiviso con gli altri PDF del sito (intestazione, numero, data) — dettagli dopo la decisione su logo/firma
+- [ ] Usa il modulo PDF condiviso (PDF-001 in `006_PRD/prd-documenti-pdf.md`): logo e intestazione CPT Trevano, protocollo e data, riquadro firma di chi decide
 - [ ] Niente invio automatico per mail (FR-E9): il proponente lo scarica dal sito
 - [ ] Test: i due PDF vengono creati, contengono protocollo e esito corretti, la vecchia versione resta dopo una modifica
 - [ ] Typecheck passes

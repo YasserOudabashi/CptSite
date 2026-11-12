@@ -3,10 +3,12 @@
 Sito in tempo reale per gestire le Giornate Autogestite (GA), poi Assemblea paritetica ed Eco Comitato. Autore: Yasser Oudabashi (presidente dell'Assemblea paritetica del CPT Trevano; tutto il lavoro è per il CPT). Il Lilu2 è un'altra scuola: lo usiamo solo come esempio e come fonte dei contatti dei relatori.
 
 ## Stato
-Fase specifiche. Nessun codice. (Regola d'oro sull'analisi del sito Lilu2 rimossa il 15.10: non serve più.) Copie dei file sorgente nelle cartelle sotto (originali in `D:\003-School\001-Samt\zDocumenti\`).
+Sito in sviluppo: Fase 1 (fondamenta, US-001–013) completata il 12.11.2026 con ralph (Sonnet 5.5) + revisione (Fable 5.2); punti aperti della revisione in `progress.txt`. Test su Windows: `npm ci` poi `npm test` (66 test). (Regola d'oro sull'analisi del sito Lilu2 rimossa il 15.10: non serve più.) Copie dei file sorgente nelle cartelle sotto (originali in `D:\003-School\001-Samt\zDocumenti\`).
 
 ## Mappa cartelle
 - `GA/` — tabella proposte (`01._tabella-autogestite-finale-CSIA.xlsx`, ~215 righe), `Excel generale.xlsx` (orari + attività + numero allievi), `GA.docx` (to-do e attività).
+- `EcoComitato/` contiene anche `OrdiniDelGiorno/` (convocazioni e ODG) e `Bandi/`; i verbali Eco scaricati da Outlook vanno in `EcoComitato/Verbali/`.
+- `006_PRD/prd-documenti-pdf.md` — PDF automatici (PDF-001–031).
 - `Assemblea/` — `PreAssemblea_2026-2027/` (temi riunione), `Seconda_Assemblea_2025-2026/` (argomenti, presenze, verbale 22.04, modello verbale).
 - `EcoComitato/` — `Verbali/` (31.03, 28.04, allegato Cittadinanza), `Sondaggi/` (SpazioAutogestito docx/xlsx/report, 100 risposte).
 - `Presentazione/` — PowerPoint per la riunione Eco del 23.10.2026 (come funziona il sito: GA, tornei, Eco). `EcoComitato/Spazio/` — Regolamento e Organigramma COMPILATI (proposte evidenziate in giallo). `Bozza_Sito/index.html` — bozza cliccabile con le pagine Eco.
@@ -56,6 +58,7 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 ## Capilab / informatica scuola (25.10)
 - Contatti: Ingrid Cereda e PaPo (ufficio capilab). Lista di distribuzione paritetica@samtrevano.ch aggiornata da Ingrid con l'Excel del 15.10 (+2 allievi).
 - Pubblicazione: capilab dice di **finire prima il sito** e poi ricontattarli (hosting e indirizzo si decidono dopo).
+- L'incontro del 30.10 NON si è tenuto: spostato a **venerdì 13.11 mattina**. Cartella pronta: `Capilab/Incontro_capilab_2026-11-13/` (spiegazione con tabella risposte, documenti precedenti, demo). Yasser porta il PC.
 - Caselle GA/Eco e gruppi docenti/allievi con permesso d'invio: da spiegare a voce in ufficio capilab **venerdì 30.10 mattina**. Le caselle saranno sul dominio samtrevano.ch (non Outlook.com): se i gruppi esistono, la mail di apertura iscrizioni è una sola mail per gruppo.
 
 ## Decisioni prese (15.10)
@@ -67,8 +70,16 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 - **Date GA**: Yasser decide oggi, dopo le 17. **Conteggio allievi**: dopo.
 - **Matrice permessi**: da fare dopo la bozza delle pagine del sito (Claude propone, Yasser conferma le pagine, poi si definiscono ruoli e permessi).
 
+## Decisioni prese (12.11)
+- **PDF automatici**: tutti i 30 proposti, generati dal server con un solo modello (logo e intestazione CPT Trevano, spazio firma, protocollo e data), archiviati con versioni; non si inviano per mail. PRD: `006_PRD/prd-documenti-pdf.md`.
+- **Aula Eco**: le richieste le può accettare ogni membro dell'Eco Comitato; la notifica (nel sito) va soprattutto al Gestore di turno. PDF di richiesta e accettazione: ECO-010b.
+- **Date**: Liceo 3 fa le GA il 13–14 aprile 2027 (da evitare). Altri licei: li porta Aline. Seconda Assemblea: sondaggio → giovedì 10.12.2026 (7 voti su 11).
+- **Sondaggio abbigliamento**: 120 risposte, risultati in `Assemblea/2026-2027/Prossima_Assemblea_Proposte_e_Aggiornamenti.docx` (punto 3). Elettronica quasi assente (2 risposte).
+- **Regali relatori**: decide il gruppo GA. **Aula lettura**: la chiede Yasser.
+- **Outlook (ssl586)**: cartelle Eco Comitato, Assemblea paritetica, GA, Capilab, Direzione, Scuola - lezioni e docenti, Newsletter e avvisi, fcj894 (amico). Push su GitHub dopo ogni controllo che passa.
+
 ## Decisioni aperte
-Prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · nome del sito. (Date GA, conteggio allievi ed elenco ID NON bloccano il sito: si inseriscono dal sito quando noti, 22.10.)
+Limite per IP di registrazione/recupero password (5/ora blocca tutta la scuola sullo stesso Wi-Fi: proposta 300/ora per IP + 5/ora per ID) · Prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · nome del sito. (Date GA, conteggio allievi ed elenco ID NON bloccano il sito: si inseriscono dal sito quando noti, 22.10.)
 
 ## Regole di lavoro
 - Domande prima di implementare (AskUserQuestion).
