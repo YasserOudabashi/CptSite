@@ -154,8 +154,8 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "can() e requireCan() in src/auth/permissions.ts; test in tests/permissions.test.ts.",
       "fase": 1
     },
     {

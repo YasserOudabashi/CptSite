@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
-import { requireRole } from '../auth/guard';
+import { requireCan } from '../auth/permissions';
 import {
   countStudentIds,
   hasGeneralCode,
@@ -36,7 +36,7 @@ ${flash}
 
 export function adminRouter(pool: Pool): Router {
   const router = Router();
-  router.use('/admin', requireRole('resp_sito'));
+  router.use('/admin', requireCan('admin.studentList'));
 
   router.get('/admin/studenti', async (_req, res, next) => {
     try {

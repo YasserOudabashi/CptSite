@@ -74,3 +74,10 @@
 - Pagine GET/POST `/recupero-password` e `/recupero-password/codice` nel router auth, link dalla pagina di login. Il Resp. sito creato dal seed (password NULL) imposta la password da qui.
 - I tentativi usano la tabella `registration_attempts` con kind `reset-id`, `reset-ip`, `reset-verify`.
 - Test in `tests/password-reset.test.ts`; 41/41 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.
+
+### US-009 — Controllo dei permessi (2026-11-12)
+- `src/auth/permissions.ts`: tabella azione → ruoli (`PERMISSIONS`), `can(user, action)` (unione dei ruoli, `resp_sito` può tutto), `requireCan(action)` (non autenticato → redirect /login; senza permesso → 403 con pagina "Non autorizzato", oppure JSON `{error}` se il client accetta JSON).
+- "Organizzatore" non è un ruolo: azioni come `ga.myActivity` e `ga.attendance.own` sono date ad allievo/docente/relatore, e la pagina deve verificare che l'attività sia DELL'utente. Le azioni Eco/Assemblea/tornei della matrice NON sono ancora incluse: aggiungerle nella tabella quando arrivano quelle fasi (tornei: serviranno ruoli per-torneo).
+- `adminRouter` ora usa `requireCan('admin.studentList')`; `requireRole` in guard.ts resta (usato in tests/login.test.ts), si può rimuovere in seguito.
+- Nuove azioni admin (`admin.users`, `admin.invites`, `admin.settings`) sono già nella tabella, solo per resp_sito: US-010..013 le usano.
+- Test 49/49 verdi su Linux (copia in /tmp/ga: rsync senza node_modules, poi `npm test`).
