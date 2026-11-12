@@ -54,3 +54,9 @@
 - `src/auth/registration.ts` → `startRegistration`: US-006 deve leggere `registration_codes` (verificare con `verifySecret`, controllare `expires_at`, creare l'utente con ruolo allievo e cancellare la riga). "Richiedi nuovo codice" = rifare il passo 1.
 - Il codice è salvato prima dell'invio e cancellato se `sendPersonalCode` lancia `MailSendError`. Ogni richiesta conta come tentativo (anche se valida), l'IP viene da `req.ip` (se dietro proxy: `app.set('trust proxy')` in produzione).
 - `authRouter(pool)` montato in `src/index.ts` (GET/POST /registrazione). Verifica in browser NON fatta (test via HTTP in `tests/registration.test.ts`). Test 29/29 su Linux (copia in /tmp con `npm ci`).
+
+### US-006 — Registrazione passo 2 (2026-11-12)
+- `completeRegistration` in `src/auth/registration.ts`: verifica il codice (hash, scadenza), password min 10 caratteri con due campi uguali, hash con `hashSecret`, crea utente + ruolo allievo in transazione; la riga di `registration_codes` viene cancellata nella stessa transazione (codice monouso, anche con richieste simultanee).
+- Limite 5 tentativi/ora per ID sui codici sbagliati (kind `verify` in `registration_attempts`), perché il codice ha solo 8 cifre.
+- Pagina GET/POST `/registrazione/codice` in `src/auth/router.ts`; sul codice errato/scaduto c'è il link a `/registrazione` (nuovo codice = rifare il passo 1). Dopo l'attivazione non c'è ancora login (US-007).
+- Test in `tests/registration-step2.test.ts`; 34/34 verdi (copia in /tmp con `npm ci`, node_modules reali sono di Windows). Verifica in browser non fatta.

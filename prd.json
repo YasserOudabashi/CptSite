@@ -104,8 +104,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "completeRegistration in src/auth/registration.ts; pagina /registrazione/codice. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {
