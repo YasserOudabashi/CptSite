@@ -87,3 +87,8 @@
 - La Home `/` ora è in `src/ui/home.ts` (`homeRouter()`, testo provvisorio: US-030 la completa); rimossa da `src/app.ts`, smoke test aggiornato.
 - Il menu contiene già i link delle pagine future (/attivita, /programma, /proponi, /la-mia-attivita, /approvazione, /gestione-ga, /admin/utenti, /admin/inviti, /admin/impostazioni): quando si creano, usare gli stessi percorsi o aggiornare `MENU`.
 - Test in `tests/layout.test.ts`; 55/55 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.
+
+### US-011 — Utenti e ruoli (admin) (2026-11-12)
+- `src/admin/users.ts`: `searchUsers` (nome, cognome o ID, ILIKE, max 200), `addUserRole`, `dropUserRole` (transazione con `FOR UPDATE` sulle righe resp_sito: l'ultimo Responsabile sito non si toglie, neanche con richieste simultanee).
+- Pagine GET `/admin/utenti?q=` e POST `/admin/utenti/ruolo/aggiungi|togli` in `adminRouter`, protette da `requireCan('admin.users')` (il `router.use('/admin')` esistente richiede ancora `admin.studentList`: stessi ruoli, solo resp_sito). Gli errori (ruolo non valido, ultimo resp_sito) tornano come messaggio nella pagina.
+- Test in `tests/admin-users.test.ts`; 59/59 verdi (copia in /tmp/ga). Verifica in browser non fatta.

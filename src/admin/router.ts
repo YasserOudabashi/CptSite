@@ -8,6 +8,7 @@ import {
   schoolDomain,
   setGeneralCode,
 } from './studentList';
+import { ROLE_CODES, addUserRole, dropUserRole, searchUsers } from './users';
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -31,6 +32,43 @@ ${flash}
 <p>${code ? 'Codice impostato.' : 'Codice non ancora impostato: nessuno può registrarsi.'}</p>
 <form method="post" action="/admin/codice-generale">
 <p><label>Nuovo codice <input type="text" name="code" required minlength="4" autocomplete="off"></label> <button>Salva</button></p></form>
+</body></html>`;
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  allievo: 'Allievo',
+  docente: 'Docente',
+  relatore: 'Relatore',
+  resp_ga: 'Responsabile GA',
+  resp_sito: 'Responsabile sito',
+};
+
+async function usersPage(pool: Pool, q: string, flash = ''): Promise<string> {
+  const users = await searchUsers(pool, q);
+  const rows = users
+    .map((u) => {
+      const have = u.roles
+        .map(
+          (r) => `<form method="post" action="/admin/utenti/ruolo/togli" style="display:inline">
+<input type="hidden" name="user" value="${u.id}"><input type="hidden" name="role" value="${r}"><input type="hidden" name="q" value="${esc(q)}">
+${esc(ROLE_LABEL[r] ?? r)} <button title="Togli ruolo">×</button></form>`,
+        )
+        .join(' · ');
+      const missing = ROLE_CODES.filter((r) => !u.roles.includes(r));
+      const add = missing.length
+        ? `<form method="post" action="/admin/utenti/ruolo/aggiungi" style="display:inline">
+<input type="hidden" name="user" value="${u.id}"><input type="hidden" name="q" value="${esc(q)}">
+<select name="role">${missing.map((r) => `<option value="${r}">${esc(ROLE_LABEL[r])}</option>`).join('')}</select> <button>Aggiungi</button></form>`
+        : '';
+      return `<tr><td>${esc(u.last_name)} ${esc(u.first_name)}<br><small>${esc(u.login_id)}</small></td><td>${have || '—'}</td><td>${add}</td></tr>`;
+    })
+    .join('');
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Utenti e ruoli</title></head><body>
+<h1>Utenti e ruoli</h1>
+${flash}
+<form method="get" action="/admin/utenti"><p><input type="search" name="q" value="${esc(q)}" placeholder="Nome o ID"> <button>Cerca</button></p></form>
+<table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Utente</th><th>Ruoli</th><th></th></tr>${rows || '<tr><td colspan="3">Nessun utente trovato.</td></tr>'}</table>
 </body></html>`;
 }
 
@@ -72,6 +110,33 @@ export function adminRouter(pool: Pool): Router {
       next(e);
     }
   });
+
+  router.get('/admin/utenti', requireCan('admin.users'), async (req, res, next) => {
+    try {
+      res.send(await usersPage(pool, String(req.query.q ?? '')));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  for (const [path, fn] of [
+    ['aggiungi', addUserRole],
+    ['togli', dropUserRole],
+  ] as const) {
+    router.post(`/admin/utenti/ruolo/${path}`, requireCan('admin.users'), async (req, res, next) => {
+      try {
+        let flash = '<p><strong>Ruoli aggiornati.</strong></p>';
+        try {
+          await fn(pool, Number(req.body?.user), String(req.body?.role ?? ''));
+        } catch (e) {
+          flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+        }
+        res.send(await usersPage(pool, String(req.body?.q ?? ''), flash));
+      } catch (e) {
+        next(e);
+      }
+    });
+  }
 
   return router;
 }

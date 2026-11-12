@@ -187,8 +187,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "src/admin/users.ts + pagina /admin/utenti in src/admin/router.ts. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {
