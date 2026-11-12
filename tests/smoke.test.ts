@@ -2,7 +2,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import type { Pool } from 'pg';
-import { app } from '../src/app';
+import express from 'express';
+import { homeRouter } from '../src/ui/home';
 import { createTestDb } from './helpers/db';
 
 let stopDb: () => Promise<void>;
@@ -15,6 +16,8 @@ before(async () => {
   stopDb = db.stop;
   pool = db.pool;
 
+  const app = express();
+  app.use(homeRouter());
   server = createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const addr = server.address() as { port: number };

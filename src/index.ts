@@ -5,6 +5,8 @@ import { authRouter } from './auth/router';
 import { sessionMiddleware } from './auth/session';
 import { runMigrations } from './db/migrate';
 import { seed } from './db/seed';
+import { homeRouter } from './ui/home';
+import { layoutMiddleware } from './ui/layout';
 import { processMailQueue, startMailWorker } from './mail/queue';
 
 const PORT = process.env.PORT ?? '3000';
@@ -20,6 +22,8 @@ async function start() {
   processMailQueue(pool).catch((err) => console.error('Coda mail:', err));
   startMailWorker(pool);
   app.use(sessionMiddleware(pool));
+  app.use(layoutMiddleware(pool));
+  app.use(homeRouter());
   app.use(authRouter(pool));
   app.use(adminRouter(pool));
   app.listen(Number(PORT), () => {

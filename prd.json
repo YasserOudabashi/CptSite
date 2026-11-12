@@ -171,8 +171,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "src/ui/layout.ts (menuFor, layoutMiddleware), src/ui/home.ts. Verifica in browser non fatta (testata via HTTP).",
       "fase": 1
     },
     {

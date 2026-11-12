@@ -81,3 +81,9 @@
 - `adminRouter` ora usa `requireCan('admin.studentList')`; `requireRole` in guard.ts resta (usato in tests/login.test.ts), si può rimuovere in seguito.
 - Nuove azioni admin (`admin.users`, `admin.invites`, `admin.settings`) sono già nella tabella, solo per resp_sito: US-010..013 le usano.
 - Test 49/49 verdi su Linux (copia in /tmp/ga: rsync senza node_modules, poi `npm test`).
+
+### US-010 — Layout e menu per ruolo (2026-11-12)
+- `src/ui/layout.ts`: `menuFor(user)` (voci filtrate con `can()`; ospite = Accedi/Registrati) e `layoutMiddleware(pool)`: avvolge `res.send` e, per ogni pagina HTML completa (`<!doctype html>…<body>`), aggiunge intestazione (nome sito + anno corrente da `getCurrentSchoolYear`), menu con `flex-wrap`, CSS `color-scheme: light dark` e pulsante Esci. Le pagine NON devono ripetere header/menu: basta inviare un documento HTML con `<body>`. Montato in `src/index.ts` dopo `sessionMiddleware`; i router restano testabili da soli.
+- La Home `/` ora è in `src/ui/home.ts` (`homeRouter()`, testo provvisorio: US-030 la completa); rimossa da `src/app.ts`, smoke test aggiornato.
+- Il menu contiene già i link delle pagine future (/attivita, /programma, /proponi, /la-mia-attivita, /approvazione, /gestione-ga, /admin/utenti, /admin/inviti, /admin/impostazioni): quando si creano, usare gli stessi percorsi o aggiornare `MENU`.
+- Test in `tests/layout.test.ts`; 55/55 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.
