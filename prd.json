@@ -224,8 +224,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Migrazione 009_settings.sql; src/admin/settings.ts; pagina /admin/impostazioni in adminRouter; QR con il pacchetto npm qrcode (locale).",
       "fase": 1
     },
     {

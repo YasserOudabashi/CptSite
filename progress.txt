@@ -98,3 +98,10 @@
 - Pagina `/admin/inviti` (permesso `admin.invites`, mostra il link da copiare: usa `SITE_URL` se impostato, altrimenti l'host della richiesta; il sito non invia la mail) e `/invito/:token` pubblica (scaduto/usato/inesistente = 410 con messaggio chiaro).
 - Nessun concetto di "conferma" docente/relatore oltre al ruolo: il ruolo è assegnato subito.
 - Test in `tests/invites.test.ts`; 62/62 verdi (copia in /tmp/ga con `npm ci`). Verifica in browser non fatta.
+
+### US-013 — Impostazioni (anno, date, blocchi orari) (2026-11-12)
+- Migrazione `009_settings.sql`: `time_blocks` (posizione, nome, kind blocco/pausa, inizio/fine; valori iniziali del 22.10 con pause e pranzo come righe `pausa`) e `ga_days` (per anno, `day` NULL = giorno da definire; nessuna riga = date "da definire").
+- `src/admin/settings.ts`: `listBlocks`/`updateBlock` (le altre pagine devono leggere i blocchi SEMPRE da `listBlocks`, cosi' una modifica si vede subito), `createSchoolYear`, `setCurrentSchoolYear` (transazione, resta uno solo corrente), `listGaDays`/`addGaDay`/`removeGaDay`, `gaDatesLabel` (per la Home, US-030), `qrPng`.
+- Pagina `/admin/impostazioni` (permesso `admin.settings`) e `/admin/impostazioni/qr.png`; l'indirizzo nel QR e' `SITE_URL` se impostato, altrimenti l'host della richiesta: in produzione impostare `SITE_URL`. QR generato con il pacchetto `qrcode` (nessun servizio esterno): nuova dipendenza, serve `npm install`.
+- Nelle tabelle HTML i form di riga usano l'attributo `form=` (un <form> dentro <tr> non e' HTML valido).
+- Test in `tests/settings.test.ts`; 66/66 verdi (copia in /tmp/ga). Verifica in browser non fatta.

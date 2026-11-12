@@ -9,6 +9,18 @@ import {
   setGeneralCode,
 } from './studentList';
 import { INVITE_ROLES, createInvite, listInvites } from './invites';
+import {
+  addGaDay,
+  createSchoolYear,
+  gaDatesLabel,
+  listBlocks,
+  listGaDays,
+  listSchoolYears,
+  qrPng,
+  removeGaDay,
+  setCurrentSchoolYear,
+  updateBlock,
+} from './settings';
 import { ROLE_CODES, addUserRole, dropUserRole, searchUsers } from './users';
 
 const esc = (s: string) =>
@@ -93,6 +105,55 @@ ${flash}
 <p>Il link è monouso e scade dopo 14 giorni. Il sito non invia la mail: copia il link e mandalo tu.</p>
 <h2>Inviti creati</h2>
 <table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Persona</th><th>Tipo</th><th>Stato</th></tr>${rows || '<tr><td colspan="3">Nessun invito.</td></tr>'}</table>
+</body></html>`;
+}
+
+const siteUrl = (req: { protocol: string; get(h: string): string | undefined }) =>
+  (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+
+async function settingsPage(pool: Pool, url: string, flash = ''): Promise<string> {
+  const [years, blocks, days] = await Promise.all([listSchoolYears(pool), listBlocks(pool), listGaDays(pool)]);
+  const yearRows = years
+    .map(
+      (y) => `<tr><td>${esc(y.name)}</td><td>${
+        y.is_current
+          ? '<strong>corrente</strong>'
+          : `<form method="post" action="/admin/impostazioni/anno/corrente"><input type="hidden" name="id" value="${y.id}"><button>Imposta come corrente</button></form>`
+      }</td></tr>`,
+    )
+    .join('');
+  const blockRows = blocks
+    .map(
+      (b) => `<tr><td><input form="b${b.id}" name="name" value="${esc(b.name)}" required size="10"></td>
+<td><input form="b${b.id}" type="time" name="start" value="${b.start}" required></td>
+<td><input form="b${b.id}" type="time" name="end" value="${b.end}" required></td>
+<td>${b.kind === 'pausa' ? 'pausa' : 'blocco'}</td>
+<td><form id="b${b.id}" method="post" action="/admin/impostazioni/blocco"><input type="hidden" name="id" value="${b.id}"><button>Salva</button></form></td></tr>`,
+    )
+    .join('');
+  const dayRows = days
+    .map(
+      (d) => `<li>${d.day ? esc(d.day.split('-').reverse().join('.')) : 'giorno da definire'}
+<form method="post" action="/admin/impostazioni/giorno/togli" style="display:inline"><input type="hidden" name="id" value="${d.id}"><button>Togli</button></form></li>`,
+    )
+    .join('');
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Impostazioni</title></head><body>
+<h1>Impostazioni</h1>
+${flash}
+<h2>Anno scolastico</h2>
+<table border="1" cellpadding="6" style="border-collapse:collapse">${yearRows}</table>
+<form method="post" action="/admin/impostazioni/anno"><p><label>Nuovo anno <input name="name" placeholder="2027-2028" required pattern="\d{4}-\d{4}"></label> <button>Crea</button></p></form>
+<h2>Blocchi orari</h2>
+<table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Nome</th><th>Inizio</th><th>Fine</th><th>Tipo</th><th></th></tr>${blockRows}</table>
+<h2>Date delle GA</h2>
+<p>Date: <strong>${esc(gaDatesLabel(days))}</strong>. Il sito funziona anche senza date.</p>
+<ul>${dayRows}</ul>
+<form method="post" action="/admin/impostazioni/giorno"><p><label>Giorno <input type="date" name="day"></label> <button>Aggiungi</button> <small>(vuoto = giorno da definire)</small></p></form>
+<h2>QR code del sito</h2>
+<p>Indirizzo: <code>${esc(url)}</code></p>
+<p><img src="/admin/impostazioni/qr.png" alt="QR code del sito" width="200" height="200"></p>
+<p><a href="/admin/impostazioni/qr.png" download="qr-portale.png">Scarica l'immagine</a></p>
 </body></html>`;
 }
 
@@ -193,6 +254,45 @@ export function adminRouter(pool: Pool): Router {
       next(e);
     }
   });
+
+  router.get('/admin/impostazioni', requireCan('admin.settings'), async (req, res, next) => {
+    try {
+      res.send(await settingsPage(pool, siteUrl(req)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/admin/impostazioni/qr.png', requireCan('admin.settings'), async (req, res, next) => {
+    try {
+      res.type('png').set('Content-Disposition', 'inline; filename="qr-portale.png"').send(await qrPng(siteUrl(req)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const settingsActions = {
+    'anno': (b: Record<string, unknown>) => createSchoolYear(pool, String(b.name ?? '')),
+    'anno/corrente': (b: Record<string, unknown>) => setCurrentSchoolYear(pool, Number(b.id)),
+    'blocco': (b: Record<string, unknown>) => updateBlock(pool, Number(b.id), String(b.name ?? ''), String(b.start ?? ''), String(b.end ?? '')),
+    'giorno': (b: Record<string, unknown>) => addGaDay(pool, String(b.day ?? '')),
+    'giorno/togli': (b: Record<string, unknown>) => removeGaDay(pool, Number(b.id)),
+  };
+  for (const [path, fn] of Object.entries(settingsActions)) {
+    router.post(`/admin/impostazioni/${path}`, requireCan('admin.settings'), async (req, res, next) => {
+      try {
+        let flash = '<p><strong>Salvato.</strong></p>';
+        try {
+          await fn(req.body ?? {});
+        } catch (e) {
+          flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+        }
+        res.send(await settingsPage(pool, siteUrl(req), flash));
+      } catch (e) {
+        next(e);
+      }
+    });
+  }
 
   return router;
 }
