@@ -59,7 +59,7 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 - Contatti: Ingrid Cereda e PaPo (ufficio capilab). Lista di distribuzione paritetica@samtrevano.ch aggiornata da Ingrid con l'Excel del 15.10 (+2 allievi).
 - Pubblicazione: capilab dice di **finire prima il sito** e poi ricontattarli (hosting e indirizzo si decidono dopo).
 - L'incontro del 30.10 NON si è tenuto: spostato a **venerdì 13.11 mattina**. Cartella pronta: `Capilab/Incontro_capilab_2026-11-13/` (spiegazione con tabella risposte, documenti precedenti, demo). Yasser porta il PC.
-- Caselle GA/Eco e gruppi docenti/allievi con permesso d'invio: da spiegare a voce in ufficio capilab **venerdì 30.10 mattina**. Le caselle saranno sul dominio samtrevano.ch (non Outlook.com): se i gruppi esistono, la mail di apertura iscrizioni è una sola mail per gruppo.
+- Caselle GA/Eco e gruppi docenti/allievi con permesso d'invio: da spiegare a voce in ufficio capilab (13.11). Le caselle saranno sul dominio samtrevano.ch (non Outlook.com): se i gruppi esistono, la mail di apertura iscrizioni è una sola mail per gruppo.
 
 ## Decisioni prese (15.10)
 - **Login/registrazione**: l'allievo inserisce il proprio ID + un codice generale (uguale per tutti) → il sito gli invia via mail un codice personale (per distinguerlo dagli altri) → inserito il codice personale sceglie la password (salvata hashata). Ruolo base = Allievo: può solo iscriversi alle GA o iscriversi per andare nell'aula dell'Eco Comitato.
@@ -78,8 +78,18 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 - **Regali relatori**: decide il gruppo GA. **Aula lettura**: la chiede Yasser.
 - **Outlook (ssl586)**: cartelle Eco Comitato, Assemblea paritetica, GA, Capilab, Direzione, Scuola - lezioni e docenti, Newsletter e avvisi, fcj894 (amico). Push su GitHub dopo ogni controllo che passa.
 
+## Decisioni e appunti (12–13.11)
+- **Limite per IP** di registrazione/recupero password: approvato 300/ora per IP + 5/ora per persona (da implementare).
+- **Date GA da proporre alla direzione**: lunedì-martedì-mercoledì 5-6-7 aprile 2027 oppure 19-20-21 aprile 2027. **Mai di venerdì.** La direzione sceglie.
+- Chiedere in che giorno sono le giornate sportive (se non c'è la settimana bianca).
+- **Nicola** vuole occuparsi dell'assegnazione delle aule alle attività.
+- **Esercito**: contatto Fiorenzo Pichler, +41 58 460 71 15 / +41 79 366 32 95, fiorenzo.pichler@vtg.admin.ch (da verificare il formato della mail).
+- **Sito da finire entro fine novembre 2026.**
+- Proposte attività: modulo Word `GA/Proposta_attivita_GA_2027.docx` e sondaggio Forms "GA 2027 – Proponi un'attività o un relatore" (inviato agli allievi il 12.11).
+- Documentazione: `docs/documentazione.py` → `docs/Documentazione_CptSite.docx`; diario: `diario.py` → `DIARIO_CptSite.docx`.
+
 ## Decisioni aperte
-Limite per IP di registrazione/recupero password (5/ora blocca tutta la scuola sullo stesso Wi-Fi: proposta 300/ora per IP + 5/ora per ID) · Prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · nome del sito. (Date GA, conteggio allievi ed elenco ID NON bloccano il sito: si inseriscono dal sito quando noti, 22.10.)
+Prenotazione spazio Eco Comitato · account Infomaniak · indirizzi 3 caselle · nome del sito. (Date GA, conteggio allievi ed elenco ID NON bloccano il sito: si inseriscono dal sito quando noti, 22.10.)
 
 ## Regole di lavoro
 - Domande prima di implementare (AskUserQuestion).

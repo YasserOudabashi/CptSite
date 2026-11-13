@@ -118,3 +118,7 @@
 - [Nota del revisore] Pulizia periodica di sessions, login_failures, registration_attempts e codici scaduti nel worker mail.
 - [Nota del revisore] Minori: avviso in Impostazioni che cambiare anno svuota l'elenco ID; errore leggibile per date impossibili; link a /login in "Account attivato"; togliere requireRole (codice morto); 401 JSON invece di 302 per richieste JSON; pagina 403 con layout; rimozione di un ID dall'elenco.
 - APERTO (decide Yasser): il limite per IP di registrazione/recupero (5/ora) blocca tutta la scuola sullo stesso Wi-Fi. Proposta: 300/ora per IP da variabile d'ambiente, 5/ora per ID.
+
+### Nota 13.11.2026
+- Decisione Yasser: limite per IP di registrazione e recupero password = 300/ora per IP + 5/ora per ID (env RATE_LIMIT_IP_PER_HOUR, default 300). Implementarlo con i punti della revisione.
+- Il run di ralph sulla Fase 2 è stato fermato il 12.11 durante US-014: è rimasto non committato `src/db/migrations/010_activities.sql`. Controllalo e riprendi da lì (o rifallo) prima di committare US-014.
