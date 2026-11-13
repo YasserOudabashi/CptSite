@@ -122,3 +122,8 @@
 ### Nota 13.11.2026
 - Decisione Yasser: limite per IP di registrazione e recupero password = 300/ora per IP + 5/ora per ID (env RATE_LIMIT_IP_PER_HOUR, default 300). Implementarlo con i punti della revisione.
 - Il run di ralph sulla Fase 2 è stato fermato il 12.11 durante US-014: è rimasto non committato `src/db/migrations/010_activities.sql`. Controllalo e riprendi da lì (o rifallo) prima di committare US-014.
+
+### US-014 (2026-11-13)
+- Migrazione `010_activities.sql`: `rooms`, `activities` (con `ga_day_id` = giorno scelto dal proponente, NULL se non deciso), `activity_sessions` (create all'approvazione, US-018), `enrollments` (`school_year_id` e `activity_id` riempiti dal trigger BEFORE INSERT), `enrollment_blocks` (un blocco per riga, riempita dal trigger AFTER INSERT; UNIQUE(user, giorno, blocco) impedisce sovrapposizioni anche con sessioni lunghe; violazione = errore contenente 'enrollment_blocks'). UNIQUE(user, activity) = una sola sessione per attivita ripetuta.
+- Test in tests/activities-schema.test.ts. Su Windows se npm ci fallisce con EPERM su postgres.exe c'e' un postgres di test rimasto vivo: usare npm install.
+- Verifica in browser: non applicabile.
