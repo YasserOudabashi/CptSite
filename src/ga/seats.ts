@@ -8,17 +8,51 @@ export function createSeatsHub(pool: Pool) {
   const clients = new Set<Response>();
   let listener: Promise<PoolClient> | null = null;
 
+  let pending: NodeJS.Timeout | null = null;
+
   async function broadcast() {
     if (!clients.size) return;
     const data = `data: ${JSON.stringify(await seatsSnapshot(pool))}\n\n`;
     for (const c of clients) c.write(data);
   }
 
+  // ponytail: le notifiche vicine (es. apertura iscrizioni) diventano un solo invio ogni 400 ms
+  function scheduleBroadcast() {
+    pending ??= setTimeout(() => {
+      pending = null;
+      broadcast().catch(() => {});
+    }, 400);
+  }
+
+  // se la connessione non parte, la prossima richiesta riprova invece di fallire per sempre
+  function listen(): Promise<PoolClient> {
+    const p = start();
+    p.catch(() => {
+      if (listener === p) listener = null;
+    });
+    return p;
+  }
+
   async function start() {
     const client = await pool.connect();
-    client.on('notification', () => broadcast().catch(() => {}));
-    client.on('error', () => {});
-    await client.query('LISTEN ga_seats');
+    client.on('notification', scheduleBroadcast);
+    client.on('error', () => {
+      // DB caduto o rete persa: si butta la connessione e, se ci sono browser collegati, si riascolta
+      client.release(true);
+      listener = null;
+      if (clients.size) {
+        setTimeout(() => {
+          if (clients.size && !listener) listener = listen();
+          scheduleBroadcast();
+        }, 1000);
+      }
+    });
+    try {
+      await client.query('LISTEN ga_seats');
+    } catch (e) {
+      client.release(true);
+      throw e;
+    }
     return client;
   }
 
@@ -38,7 +72,7 @@ export function createSeatsHub(pool: Pool) {
       clients.delete(res);
       if (!clients.size) stop().catch(() => {});
     });
-    listener ??= start();
+    listener ??= listen();
     await listener;
     res.write(`data: ${JSON.stringify(await seatsSnapshot(pool))}\n\n`);
   };

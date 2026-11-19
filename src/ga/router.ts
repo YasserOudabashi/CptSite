@@ -246,7 +246,8 @@ export function gaRouter(pool: Pool): Router {
       try {
         if (b.action === 'reject') await rejectProposal(pool, id, s('reason'));
         else if (b.action === 'save') await saveProposal(pool, id, edit);
-        else await approveProposal(pool, id, edit, [Number(s('block1')), Number(s('block2'))].slice(0, s('block2') ? 2 : 1));
+        else if (b.action === 'approve') await approveProposal(pool, id, edit, [Number(s('block1')), Number(s('block2'))].slice(0, s('block2') ? 2 : 1));
+        else throw new Error('Azione non valida.');
       } catch (e) {
         flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
       }

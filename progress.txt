@@ -153,3 +153,11 @@
 - `src/ga/mine.ts`: `listMine` (attivita' proprie dell'anno corrente con sessioni e iscritti nome+classe), `updateMine` (UPDATE condizionato: solo organizer_id = utente, massimo non sotto il minimo ne' sotto gli iscritti di nessuna sessione). Pagina GET /la-mia-attivita e POST /la-mia-attivita/:id (permesso ga.myActivity); chi non ha proposto nulla riceve 404 con messaggio. Mostra anche stato e motivo del rifiuto (US-018).
 - Limite noto: la voce di menu 'La mia attivita'' compare a tutti gli allievi/docenti/relatori (menuFor usa solo can()); si potrebbe nascondere per chi non ha proposte. Il controllo 'massimo >= iscritti' non e' bloccante contro iscrizioni simultanee: US-021 deve controllare comunque il massimo nella propria transazione.
 - Test in tests/my-activity.test.ts; 83/83 verdi. Verifica in browser: ancora DA FARE.
+
+### Revisione Fase 2 (Opus 5.5 al posto di Fable 5.2, senza crediti; 19.11.2026)
+- Già sistemato: SSE che riascolta dopo un errore del DB e riprova se il LISTEN non parte; invii raggruppati ogni 400 ms; ripetizioni che non possono occupare lo stesso blocco; CSV materiali (anche TAB/CR e spazi iniziali); /approvazione rifiuta azioni sconosciute.
+- [Nota del revisore] US-020: nella transazione di iscrizione `SELECT ... FROM activities WHERE id=$1 FOR UPDATE`, poi contare e inserire; `updateMine` (src/ga/mine.ts) deve prendere lo stesso lock prima di cambiare il max.
+- [Nota del revisore] Vietare con un trigger l'UPDATE di enrollments.session_id e activity_sessions.start_block_id (enrollment_blocks calcolato solo all'INSERT).
+- [Nota del revisore] Conteggi per blocco (roomsWithUsage, blockLoad) e filtro blocco di /attivita: usare tutto lo span dei blocchi e il giorno, non solo start_block_id.
+- [Nota del revisore] CSRF: middleware Origin == SITE_URL (anche dalla revisione Fase 1). Menu "La mia attività" visibile anche a chi non ha attività.
+- Verify in browser di US-015..019 ancora da fare.

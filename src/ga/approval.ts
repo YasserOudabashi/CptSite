@@ -82,8 +82,15 @@ export async function approveProposal(pool: Pool, id: number, e: Edit, blockIds:
     if (!a) throw new Error('Proposta non trovata o già decisa.');
     if (blockIds.length !== a.repetitions || blockIds.some((b) => !Number.isInteger(b) || b <= 0)) throw new Error('Scegli il blocco di ogni sessione.');
     if (new Set(blockIds).size !== blockIds.length) throw new Error('Le due ripetizioni devono stare in blocchi diversi.');
+    const used = new Set<number>();
     for (const b of blockIds) {
-      if (!blockSpan(blocks, b, a.duration_blocks)) throw new Error('Il blocco scelto non basta per la durata (pranzo o fine giornata in mezzo).');
+      const span = blockSpan(blocks, b, a.duration_blocks);
+      if (!span) throw new Error('Il blocco scelto non basta per la durata (pranzo o fine giornata in mezzo).');
+      // le due ripetizioni non possono occupare lo stesso blocco (es. durata 2 su B1 e B2)
+      for (const x of span) {
+        if (used.has(x.id)) throw new Error('Le due ripetizioni si sovrappongono: scegli blocchi che non si toccano.');
+        used.add(x.id);
+      }
     }
     // Giorno: quello scelto dal proponente, altrimenti il primo dell'anno (se non c'è nessun giorno se ne crea uno "da definire").
     let day = a.ga_day_id as number | null;
@@ -125,7 +132,7 @@ export async function materialsList(pool: Pool): Promise<{ title: string; organi
 
 export function materialsCsv(rows: { title: string; organizer: string; materials: string }[]): string {
   // un valore che inizia con = + - @ verrebbe eseguito come formula da Excel: si neutralizza con un apice
-  const q = (s: string) => `"${s.replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
+  const q = (s: string) => `"${s.replace(/^(\s*[=+\-@]|[\t\r])/, "'$1").replace(/"/g, '""')}"`;
   // BOM per Excel; ';' come separatore (Excel italiano)
   return '﻿' + [['Attività', 'Organizzatore', 'Materiali'], ...rows.map((r) => [r.title, r.organizer, r.materials])].map((l) => l.map(q).join(';')).join('\r\n') + '\r\n';
 }
