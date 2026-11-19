@@ -7,6 +7,7 @@ import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { Mine, listMine, updateMine } from './mine';
+import { programPage } from './program';
 import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
 
@@ -235,6 +236,14 @@ export function gaRouter(pool: Pool): Router {
       }
     });
   }
+
+  router.get('/programma', requireCan('ga.enroll'), async (req, res, next) => {
+    try {
+      res.send(await programPage(pool, req.user!.id));
+    } catch (e) {
+      next(e);
+    }
+  });
 
   router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {
     try {
