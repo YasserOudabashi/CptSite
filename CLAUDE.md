@@ -58,7 +58,7 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 ## Capilab / informatica scuola (25.10)
 - Contatti: Ingrid Cereda e PaPo (ufficio capilab). Lista di distribuzione paritetica@samtrevano.ch aggiornata da Ingrid con l'Excel del 15.10 (+2 allievi).
 - Pubblicazione: capilab dice di **finire prima il sito** e poi ricontattarli (hosting e indirizzo si decidono dopo).
-- L'incontro del 30.10 NON si è tenuto: spostato a **venerdì 13.11 mattina**. Cartella pronta: `Capilab/Incontro_capilab_2026-11-13/` (spiegazione con tabella risposte, documenti precedenti, demo). Yasser porta il PC.
+- Incontro capilab: NON ancora fatto (né 30.10 né 13.11): da fissare. Cartella pronta: `Capilab/Incontro_capilab_2026-11-13/` (spiegazione con tabella risposte, documenti precedenti, demo). Yasser porta il PC.
 - Caselle GA/Eco e gruppi docenti/allievi con permesso d'invio: da spiegare a voce in ufficio capilab (13.11). Le caselle saranno sul dominio samtrevano.ch (non Outlook.com): se i gruppi esistono, la mail di apertura iscrizioni è una sola mail per gruppo.
 
 ## Decisioni prese (15.10)
@@ -80,11 +80,13 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 
 ## Decisioni e appunti (12–13.11)
 - **Limite per IP** di registrazione/recupero password: approvato 300/ora per IP + 5/ora per persona (da implementare).
-- **Date GA da proporre alla direzione**: lunedì-martedì-mercoledì 5-6-7 aprile 2027 oppure 19-20-21 aprile 2027. **Mai di venerdì.** La direzione sceglie.
+- **Data GA approvata: mercoledì 21 aprile 2027** (un giorno). Altri licei: Liceo 1 23–24.3 · Liceo 2 12–13.4 · Liceo 3 13–14.4 · Liceo Belli 8–10.3 (da confermare) · Liceo Mendrisio 15–16.3 · Liceo Locarno 22–23.3 · SCC Belli 15–16.3 (o solo 15). Nessuna sovrapposizione.
 - Chiedere in che giorno sono le giornate sportive (se non c'è la settimana bianca).
 - **Nicola** vuole occuparsi dell'assegnazione delle aule alle attività.
 - **Esercito**: contatto Fiorenzo Pichler, +41 58 460 71 15 / +41 79 366 32 95, fiorenzo.pichler@vtg.admin.ch (da verificare il formato della mail).
 - **Sito da finire entro fine novembre 2026.**
+- Sondaggi (19.11): report in `Assemblea/2026-2027/Report_sondaggi_2026-11-19.html`. Abbigliamento: Elettronica non si riapre, i dati bastano. Proposte attività: 2 (Unihockey, Macramè). Seconda Assemblea fissata giovedì 10.12.2026, nuovi argomenti entro giovedì 3.12; bozza mail a paritetica@samtrevano.ch preparata in Outlook (con allegato il docx della prossima assemblea).
+- Festa di fine anno: promemoria nel calendario Google il 4 febbraio 2027.
 - Proposte attività: modulo Word `GA/Proposta_attivita_GA_2027.docx` e sondaggio Forms "GA 2027 – Proponi un'attività o un relatore" (inviato agli allievi il 12.11).
 - Documentazione: `docs/documentazione.py` → `docs/Documentazione_CptSite.docx`; diario: `diario.py` → `DIARIO_CptSite.docx`.
 
