@@ -4,6 +4,7 @@ import { requireCan } from '../auth/permissions';
 import { listBlocks, listGaDays } from '../admin/settings';
 import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
+import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
 
@@ -102,6 +103,58 @@ ${flash}
 </body></html>`;
 }
 
+async function approvalPage(pool: Pool, flash = ''): Promise<string> {
+  const [pending, blocks, rooms, load, materials] = await Promise.all([
+    listPending(pool),
+    listBlocks(pool),
+    listRooms(pool),
+    blockLoad(pool),
+    materialsList(pool),
+  ]);
+  const realBlocks = blocks.filter((b) => b.kind === 'blocco');
+  const blockOpts = (sel: number) =>
+    realBlocks
+      .map((b) => {
+        const l = load.get(b.id) ?? { activities: 0, seats: 0 };
+        return `<option value="${b.id}"${b.id === sel ? ' selected' : ''}>${esc(blockLabel(b))} — ${l.activities} attività, ${l.seats} posti</option>`;
+      })
+      .join('');
+  const name = (id: number | null) => (id ? realBlocks.find((b) => b.id === id)?.name ?? '' : '');
+  const item = (a: Pending) => {
+    const sessions = Array.from({ length: a.repetitions }, (_, i) =>
+      `<p><label>${a.repetitions > 1 ? `Sessione ${i + 1}` : 'Blocco definitivo'} (${a.duration_blocks} bl.) <select name="block${i + 1}">${blockOpts(
+        i === 0 ? a.first_block_id : a.second_block_id,
+      )}</select></label></p>`).join('');
+    return `<form method="post" action="/approvazione/${a.id}" style="border:1px solid #8886;border-radius:.5rem;padding:.5rem 1rem;margin:.75rem 0">
+<h2 style="margin:.25rem 0">${esc(a.title)}</h2>
+<p><small>${esc(a.organizer)} (${esc(a.email)}) · tel. ${esc(a.contact)} · prima scelta ${esc(name(a.first_block_id))}, seconda ${esc(name(a.second_block_id))}</small></p>
+<p><label>Titolo <input name="title" value="${esc(a.title)}" required></label></p>
+<p><label>Descrizione<br><textarea name="description" rows="3" cols="50" required>${esc(a.description)}</textarea></label></p>
+<p><label>Telefono <input name="phone" value="${esc(a.contact)}"></label>
+<label>Aula <select name="room"><option value="">Da definire</option>${rooms
+      .map((r) => `<option value="${r.id}"${r.id === a.room_id ? ' selected' : ''}>${esc(r.name)}</option>`)
+      .join('')}</select></label></p>
+<p><label>Materiali <input name="materials" value="${esc(a.materials)}" size="40"></label></p>
+<p><label>Minimo <input type="number" name="min" min="0" value="${a.min_participants}"></label>
+<label>Massimo <input type="number" name="max" min="1" value="${a.max_participants}" required></label></p>
+${sessions}
+<p><button name="action" value="approve">Approva</button> <button name="action" value="save">Salva modifiche</button>
+<input name="reason" placeholder="Motivo del rifiuto (facoltativo)" size="30"> <button name="action" value="reject">Rifiuta</button></p></form>`;
+  };
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Approvazione attività</title></head><body>
+<h1>Attività da approvare</h1>
+${flash}
+${pending.map(item).join('') || '<p>Nessuna proposta da approvare.</p>'}
+<h2>Materiali richiesti (attività approvate)</h2>
+<p><a href="/approvazione/materiali.csv">Esporta in CSV</a></p>
+<table border="1" cellpadding="6" style="border-collapse:collapse"><tr><th>Attività</th><th>Organizzatore</th><th>Materiali</th></tr>${
+    materials.map((m) => `<tr><td>${esc(m.title)}</td><td>${esc(m.organizer)}</td><td>${esc(m.materials)}</td></tr>`).join('') ||
+    '<tr><td colspan="3">Nessun materiale richiesto.</td></tr>'
+  }</table>
+</body></html>`;
+}
+
 export function gaRouter(pool: Pool): Router {
   const router = Router();
   const subscribe = createSeatsHub(pool);
@@ -135,6 +188,42 @@ export function gaRouter(pool: Pool): Router {
       } catch (e) {
         res.status(400).send(await proposePage(pool, req.user!, body, `<p><strong>${esc((e as Error).message)}</strong></p>`));
       }
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/approvazione', requireCan('ga.approve'), async (_req, res, next) => {
+    try {
+      res.send(await approvalPage(pool));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/approvazione/materiali.csv', requireCan('ga.approve'), async (_req, res, next) => {
+    try {
+      res.type('text/csv; charset=utf-8').set('Content-Disposition', 'attachment; filename="materiali-ga.csv"').send(materialsCsv(await materialsList(pool)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/approvazione/:id', requireCan('ga.approve'), async (req, res, next) => {
+    try {
+      const b = req.body ?? {};
+      const id = Number(req.params.id);
+      const s = (k: string) => String(b[k] ?? '').trim();
+      const edit = { title: s('title'), description: s('description'), contact: s('phone'), roomId: Number(s('room')) || null, materials: s('materials'), min: Number(s('min') || 0), max: Number(s('max')) };
+      let flash = '<p><strong>Fatto.</strong></p>';
+      try {
+        if (b.action === 'reject') await rejectProposal(pool, id, s('reason'));
+        else if (b.action === 'save') await saveProposal(pool, id, edit);
+        else await approveProposal(pool, id, edit, [Number(s('block1')), Number(s('block2'))].slice(0, s('block2') ? 2 : 1));
+      } catch (e) {
+        flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+      }
+      res.send(await approvalPage(pool, flash));
     } catch (e) {
       next(e);
     }

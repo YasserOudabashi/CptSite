@@ -142,3 +142,9 @@
 - `src/ga/proposals.ts`: `parseProposal`, `createProposal` (controlli: obbligatori, min<=max, prima/seconda scelta diverse e obbligatorie, durata via `blockSpan`: blocchi consecutivi con pausa <= 30 min, quindi non attraversa il pranzo ne' la fine giornata), `roomsWithUsage` (aule con i blocchi gia' occupati da attivita' approvate). Pagina GET/POST /proponi (permesso ga.propose) in ga/router.ts; stato iniziale 'proposta', non compare in /attivita.
 - Le sessioni (activity_sessions) NON si creano alla proposta ma all'approvazione (US-018). Con 'Ripeti' (repetitions=2) la prima sessione usa il blocco scelto, la seconda un altro blocco diverso.
 - Test in tests/propose.test.ts; 77/77 verdi. Verifica in browser: ancora DA FARE.
+
+### US-018 (2026-11-19)
+- `src/ga/approval.ts`: `listPending`, `blockLoad` (attivita' e posti gia' approvati per blocco, mostrati nel menu del blocco), `saveProposal`, `approveProposal` (transazione con FOR UPDATE: valida i blocchi con blockSpan, crea le activity_sessions; il giorno e' quello scelto dal proponente, altrimenti il primo ga_day dell'anno, altrimenti ne crea uno 'da definire'), `rejectProposal` (motivo facoltativo, salvato in reject_reason), `materialsList`/`materialsCsv` (separatore ';', BOM, protezione da formule Excel).
+- Pagina GET /approvazione + POST /approvazione/:id (action approve/save/reject) + GET /approvazione/materiali.csv, permesso ga.approve. Dopo l'approvazione i blocchi non si cambiano piu' da qui.
+- Il proponente vede lo stato (proposta/approvata/rifiutata + motivo) in /la-mia-attivita (US-019).
+- Test in tests/approval.test.ts; 80/80 verdi. Verifica in browser: ancora DA FARE.
