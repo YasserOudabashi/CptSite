@@ -17,7 +17,7 @@ before(async () => {
   pool = db.pool;
 
   const app = express();
-  app.use(homeRouter());
+  app.use(homeRouter(pool));
   server = createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const addr = server.address() as { port: number };

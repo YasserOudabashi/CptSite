@@ -26,7 +26,7 @@ async function start() {
   startMailWorker(pool);
   app.use(sessionMiddleware(pool));
   app.use(layoutMiddleware(pool));
-  app.use(homeRouter());
+  app.use(homeRouter(pool));
   app.use(authRouter(pool));
   app.use(adminRouter(pool));
   app.use(gaRouter(pool));

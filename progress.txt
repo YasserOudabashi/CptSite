@@ -171,3 +171,9 @@
 ### US-021 (2026-11-19)
 - `src/ga/program.ts` (`programPage`) e GET /programma (permesso ga.enroll): per ogni giorno GA un riquadro per blocco (attivita', aula, organizzatore; sessioni lunghe in ogni blocco coperto, via enrollment_blocks), "(assegnata a caso)" se enrollments.assigned, blocchi liberi evidenziati con link a /attivita?block=ID.
 - Test tests/program.test.ts; 91/91 verdi. Verifica in browser: non fatta.
+
+### US-022 (2026-11-19)
+- `src/ga/enroll.ts`: `setEnrollState` e `openEnrollment` (transazione con lock sulla riga dell'anno; la mail parte via `sendEnrollmentOpen` una sola volta per anno, il reinvio richiede la spunta 'reinvia comunque' lato server). Colonne gia' nella migrazione 012.
+- Nuova pagina GET /gestione-ga (`src/ga/manage.ts`, permesso ga.manage) con stato iscrizioni e pulsante 'Apri le iscrizioni' (conferma JS); US-023/025/026/027/029 aggiungono sezioni a questa pagina. Azioni POST /gestione-ga/stato e /gestione-ga/apri.
+- `homeRouter(pool)` ora riceve il pool e mostra lo stato delle iscrizioni (US-030 la completa).
+- Test tests/enroll-state.test.ts; 94/94 verdi. Verifica in browser: non fatta.

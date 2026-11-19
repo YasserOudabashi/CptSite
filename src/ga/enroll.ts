@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { can } from '../auth/permissions';
+import { sendEnrollmentOpen } from '../mail';
 import type { RoleCode } from '../users/roles';
 
 type User = { id: number; roles: readonly RoleCode[] };
@@ -78,4 +79,30 @@ export async function mySessionIds(pool: Pool, userId: number): Promise<Set<numb
     [userId],
   );
   return new Set(rows.map((r) => r.session_id));
+}
+
+export async function setEnrollState(pool: Pool, state: string): Promise<void> {
+  if (!(state in STATES)) throw new Error('Stato non valido.');
+  await pool.query('UPDATE school_years SET enrollment_state = $1 WHERE is_current', [state]);
+}
+
+// Porta le iscrizioni ad "Aperte a tutti" e avvia la mail di apertura (una sola volta per anno, salvo conferma esplicita).
+export async function openEnrollment(pool: Pool, userId: number, resend: boolean): Promise<number> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query('SELECT enrollment_mail_sent_at AS sent FROM school_years WHERE is_current FOR UPDATE');
+    if (rows[0].sent && !resend) {
+      throw new Error('La mail di apertura è già stata inviata quest\'anno: per reinviarla spunta la conferma.');
+    }
+    await client.query(`UPDATE school_years SET enrollment_state = 'aperte', enrollment_mail_sent_at = now() WHERE is_current`);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+  // Dopo il commit: la mail è in coda nel database e il worker riprova se qualche invio fallisce.
+  return (await sendEnrollmentOpen(pool, { createdBy: userId })).recipients;
 }

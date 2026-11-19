@@ -1,12 +1,13 @@
 import { Request, Router } from 'express';
 import { Pool } from 'pg';
 import { can, requireCan } from '../auth/permissions';
-import { STATES, cancelEnrollment, enroll, getEnrollState, mySessionIds } from './enroll';
+import { STATES, cancelEnrollment, enroll, getEnrollState, mySessionIds, openEnrollment, setEnrollState } from './enroll';
 import { listBlocks, listGaDays } from '../admin/settings';
 import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { Mine, listMine, updateMine } from './mine';
+import { managePage } from './manage';
 import { programPage } from './program';
 import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
@@ -243,6 +244,41 @@ export function gaRouter(pool: Pool): Router {
     } catch (e) {
       next(e);
     }
+  });
+
+  router.get('/gestione-ga', requireCan('ga.manage'), async (_req, res, next) => {
+    try {
+      res.send(await managePage(pool));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Azioni della pagina Gestione GA: ogni funzione torna il messaggio da mostrare.
+  const manageAction = (path: string, run: (req: Request) => Promise<string>) =>
+    router.post(path, requireCan('ga.manage'), async (req, res, next) => {
+      try {
+        let flash: string;
+        let status = 200;
+        try {
+          flash = `<p><strong>${esc(await run(req))}</strong></p>`;
+        } catch (e) {
+          flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+          status = 400;
+        }
+        res.status(status).send(await managePage(pool, flash));
+      } catch (e) {
+        next(e);
+      }
+    });
+
+  manageAction('/gestione-ga/stato', async (req) => {
+    await setEnrollState(pool, String(req.body?.state ?? ''));
+    return 'Stato delle iscrizioni aggiornato.';
+  });
+  manageAction('/gestione-ga/apri', async (req) => {
+    const n = await openEnrollment(pool, req.user!.id, req.body?.resend === '1');
+    return `Iscrizioni aperte a tutti. Mail di apertura messa in coda per ${n} destinatari.`;
   });
 
   router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {

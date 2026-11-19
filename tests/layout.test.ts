@@ -24,7 +24,7 @@ before(async () => {
     next();
   });
   app.use(layoutMiddleware(pool));
-  app.use(homeRouter());
+  app.use(homeRouter(pool));
   server = await new Promise((r) => {
     const s = app.listen(0, () => r(s));
   });
