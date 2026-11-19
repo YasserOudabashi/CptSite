@@ -7,6 +7,7 @@ import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { Mine, listMine, updateMine } from './mine';
+import { WHAT, What, exportRows, toCsv, toXlsx } from './exports';
 import { activityPage, setAttendance } from './attendance';
 import { applyAssign, buildPlan, undoAssign } from './assign';
 import { managePage } from './manage';
@@ -263,6 +264,32 @@ export function gaRouter(pool: Pool): Router {
       }
       const html = await activityPage(pool, req.user!, id, flash);
       res.status(html ? status : 404).send(html ?? 'Attività non trovata');
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/gestione-ga/export', requireCan('ga.manage'), async (req, res, next) => {
+    try {
+      const q = req.query;
+      const what = String(q.what ?? '') as What;
+      if (!WHAT.includes(what)) {
+        res.status(400).send('Export non valido.');
+        return;
+      }
+      const year = (await pool.query('SELECT id, name FROM school_years WHERE id = $1 OR (is_current AND $1::int IS NULL)', [Number(q.anno) || null])).rows[0];
+      if (!year) {
+        res.status(400).send('Anno non valido.');
+        return;
+      }
+      const ids = [q.ids ?? []].flat().flatMap((x) => String(x).split(',')).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+      const rows = await exportRows(pool, what, year.id, { kind: String(q.kind ?? '') || undefined, ids, classe: String(q.classe ?? '') });
+      const name = `${what}-${year.name}`;
+      if (q.fmt === 'xlsx') {
+        res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').set('Content-Disposition', `attachment; filename="${name}.xlsx"`).send(toXlsx(rows, what));
+      } else {
+        res.type('text/csv; charset=utf-8').set('Content-Disposition', `attachment; filename="${name}.csv"`).send(toCsv(rows));
+      }
     } catch (e) {
       next(e);
     }

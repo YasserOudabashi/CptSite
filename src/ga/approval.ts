@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { listBlocks } from '../admin/settings';
+import { toCsv } from './exports';
 import { blockSpan } from './proposals';
 
 export type Pending = {
@@ -132,8 +133,5 @@ export async function materialsList(pool: Pool): Promise<{ title: string; organi
 }
 
 export function materialsCsv(rows: { title: string; organizer: string; materials: string }[]): string {
-  // un valore che inizia con = + - @ verrebbe eseguito come formula da Excel: si neutralizza con un apice
-  const q = (s: string) => `"${s.replace(/^(\s*[=+\-@]|[\t\r])/, "'$1").replace(/"/g, '""')}"`;
-  // BOM per Excel; ';' come separatore (Excel italiano)
-  return '﻿' + [['Attività', 'Organizzatore', 'Materiali'], ...rows.map((r) => [r.title, r.organizer, r.materials])].map((l) => l.map(q).join(';')).join('\r\n') + '\r\n';
+  return toCsv([['Attività', 'Organizzatore', 'Materiali'], ...rows.map((r) => [r.title, r.organizer, r.materials])]);
 }

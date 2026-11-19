@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { esc } from '../ui/layout';
+import { listSchoolYears } from '../admin/settings';
 import { STATES, getEnrollState } from './enroll';
 
 export type ActivityRow = {
@@ -80,6 +81,7 @@ export async function managePage(pool: Pool, flash = ''): Promise<string> {
     listPeople(pool, year, 'relatore'),
     listPeople(pool, year, 'docente'),
   ]);
+  const years = await listSchoolYears(pool);
   const table = (head: string[], rows: string[]) =>
     `<table border="1" cellpadding="6" style="border-collapse:collapse"><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table>`;
   const STATUS: Record<string, string> = { proposta: 'proposta', approvata: 'approvata', rifiutata: 'rifiutata' };
@@ -127,6 +129,18 @@ ${
   }
 <h2>Relatori</h2>${people(relatori)}
 <h2>Docenti</h2>${people(docenti)}
+<h2>Esporta</h2>
+<form method="get" action="/gestione-ga/export"><p>
+<select name="what" aria-label="Cosa">${[['attivita', 'Attività'], ['allievi', 'Allievi (classe e programma)'], ['relatori', 'Relatori'], ['docenti', 'Docenti'], ['presenze', 'Presenze']]
+    .map(([k, l]) => `<option value="${k}">${l}</option>`)
+    .join('')}</select>
+<select name="fmt" aria-label="Formato"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+<select name="anno" aria-label="Anno">${years.map((y) => `<option value="${y.id}"${y.is_current ? ' selected' : ''}>${esc(y.name)}</option>`).join('')}</select></p>
+<p><small>Filtri per attività e presenze:</small>
+<select name="kind" aria-label="Organizzatore"><option value="">Tutti gli organizzatori</option><option value="allievo">Solo di allievi</option><option value="docente">Solo di docenti</option><option value="relatore">Solo di relatori</option></select>
+<select name="ids" multiple size="4" aria-label="Attività scelte" title="Tieni premuto Ctrl per sceglierne più d'una">${activities.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select>
+<small>Filtro per allievi:</small> <input name="classe" placeholder="Classe (es. I3A)" size="10">
+<button>Scarica</button></p></form>
 <h2>Presenze mancanti</h2>
 ${
     missing.length

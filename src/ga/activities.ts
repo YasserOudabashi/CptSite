@@ -18,7 +18,7 @@ export type SessionRow = {
 export type Filters = { block?: number; room?: number; kind?: string; q?: string };
 
 // Tipo di organizzatore: il più "alto" dei suoi ruoli (relatore > docente > allievo).
-const KIND = `(CASE WHEN EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.role_code = 'relatore') THEN 'relatore'
+export const KIND = `(CASE WHEN EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.role_code = 'relatore') THEN 'relatore'
   WHEN EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.role_code = 'docente') THEN 'docente' ELSE 'allievo' END)`;
 
 // Una riga per sessione (un'attività ripetuta compare due volte) delle attività APPROVATE dell'anno corrente.
