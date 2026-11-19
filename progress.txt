@@ -187,3 +187,7 @@
 - `src/ga/attendance.ts`: pagina GET /attivita/:id (titolo dell'attivita' nelle schede ora e' un link) con la lista iscritti e una casella 'presente' per iscritto, visibile solo all'organizzatore e a chi ha ga.manage; POST /attivita/:id/presenze (`setAttendance`: UPDATE present = (id = ANY(spuntati)), le non spuntate diventano 'assente'; organizzatore solo la sua, resp_ga tutte, solo anno corrente = sola lettura dopo il cambio anno).
 - Le presenze 'segnate' = enrollments.present non NULL (US-025 la usa). Gli anni passati sono visibili solo a chi ha ga.manage (US-028).
 - Test tests/attendance.test.ts; 102/102 verdi. Verifica in browser: non fatta.
+
+### US-025 (2026-11-19)
+- `missingAttendance` in src/ga/manage.ts + riquadro 'Presenze mancanti' in /gestione-ga: sessioni concluse (giorno + fine dell'ultimo blocco, ora di Zurigo; giorni 'da definire' ignorati) con iscritti e nessuna presenza segnata, con organizzatore, e-mail e telefono. Solo visualizzazione: nessuna mail (il PRD e CLAUDE.md coincidono, il sito invia solo le tre mail).
+- Test tests/missing-attendance.test.ts (ora passata come parametro); 104/104 verdi. Verifica in browser: non fatta.
