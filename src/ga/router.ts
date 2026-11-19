@@ -7,6 +7,7 @@ import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { Mine, listMine, updateMine } from './mine';
+import { applyAssign, buildPlan, undoAssign } from './assign';
 import { managePage } from './manage';
 import { programPage } from './program';
 import { createSeatsHub } from './seats';
@@ -255,13 +256,15 @@ export function gaRouter(pool: Pool): Router {
   });
 
   // Azioni della pagina Gestione GA: ogni funzione torna il messaggio da mostrare.
-  const manageAction = (path: string, run: (req: Request) => Promise<string>) =>
+  const manageAction = (path: string, run: (req: Request) => Promise<string | { msg: string; html: string }>) =>
     router.post(path, requireCan('ga.manage'), async (req, res, next) => {
       try {
         let flash: string;
         let status = 200;
         try {
-          flash = `<p><strong>${esc(await run(req))}</strong></p>`;
+          const r = await run(req);
+          const { msg, html } = typeof r === 'string' ? { msg: r, html: '' } : r;
+          flash = `<p><strong>${esc(msg)}</strong></p>${html}`;
         } catch (e) {
           flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
           status = 400;
@@ -279,6 +282,24 @@ export function gaRouter(pool: Pool): Router {
   manageAction('/gestione-ga/apri', async (req) => {
     const n = await openEnrollment(pool, req.user!.id, req.body?.resend === '1');
     return `Iscrizioni aperte a tutti. Mail di apertura messa in coda per ${n} destinatari.`;
+  });
+
+  manageAction('/gestione-ga/assegna', async (req) => {
+    const action = String(req.body?.action ?? '');
+    if (action === 'undo') return `Assegnazioni annullate: ${await undoAssign(pool)}.`;
+    if (action === 'confirm') {
+      const plan = await applyAssign(pool, req.body?.partial === '1');
+      return `Assegnate ${plan.rows.length} iscrizioni${plan.unassignable.length ? `; ${plan.unassignable.length} blocchi restano non assegnati` : ''}.`;
+    }
+    if ((await getEnrollState(pool)) !== 'chiuse') throw new Error('Serve lo stato iscrizioni chiuse per assegnare a caso.');
+    const p = await buildPlan(pool);
+    const li = (a: string[]) => `<ul>${a.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    return {
+      msg: `Anteprima: ${p.students} allievi da assegnare (${p.slots} blocchi), ${p.freeSeats} posti liberi in totale.`,
+      html: `${p.unassignable.length ? `<p>Non assegnabili (posti insufficienti):</p>${li(p.unassignable.map((u) => `${u.user} · ${u.day} · ${u.block}`))}` : '<p>Tutti assegnabili.</p>'}${
+        p.notRegistered.length ? `<p>Nell'elenco ID ma non ancora registrati (non assegnabili): ${p.notRegistered.length}</p>${li(p.notRegistered)}` : ''
+      }`,
+    };
   });
 
   router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {

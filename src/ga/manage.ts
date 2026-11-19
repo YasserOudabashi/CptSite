@@ -18,5 +18,13 @@ ${flash}
 <p><button>Apri le iscrizioni</button>${
     sent ? ' <label><input type="checkbox" name="resend" value="1"> la mail è già stata inviata: reinvia comunque</label>' : ''
   }</p></form>
+<h2>Assegnazione casuale</h2>${
+    state === 'chiuse'
+      ? `<form method="post" action="/gestione-ga/assegna"><p><button name="action" value="preview">Anteprima</button>
+<button name="action" value="confirm" onclick="return confirm('Assegnare a caso gli allievi senza iscrizione?')">Assegna a caso</button>
+<label><input type="checkbox" name="partial" value="1"> assegna comunque anche se alcuni posti non bastano</label>
+<button name="action" value="undo" onclick="return confirm('Annullare tutte le assegnazioni casuali?')">Annulla le assegnazioni</button></p></form>`
+      : '<p>Disponibile quando le iscrizioni sono chiuse.</p>'
+  }
 </body></html>`;
 }
