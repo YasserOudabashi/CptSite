@@ -132,3 +132,8 @@
 - `src/ga/activities.ts` (`listSessions` con filtri, una riga per sessione), `src/ga/router.ts` (`gaRouter(pool)`, pagina GET /attivita con permesso ga.view; montato in index.ts). Tipo organizzatore = ruolo piu' alto (relatore > docente > allievo). Aggiunto resp_ga a ga.view; `esc` esportato da ui/layout.ts.
 - Ogni sessione ha <li data-session=ID> con <progress> e <span class=seats>: US-016 li aggiorna via SSE.
 - Test in tests/activities-list.test.ts (73/73 verdi). Verifica in browser: ancora DA FARE.
+
+### US-016 (2026-11-19)
+- Migrazione `011_seat_notify.sql`: trigger statement-level che fanno pg_notify('ga_seats') su enrollments (I/D), activity_sessions (I/D), activities (UPDATE): chi cambia iscrizioni, sessioni o max partecipanti (US-018/019/021) non deve fare altro.
+- `src/ga/seats.ts` (`createSeatsHub`): un solo client pg in LISTEN finche' c'e' un browser collegato (rilasciato con release(true)); a ogni notifica manda a tutti lo stato completo {sessione: {n, max}}. Endpoint GET /attivita/eventi (SSE, heartbeat 25 s). Il client in /attivita usa EventSource (si riconnette da solo; il server rimanda lo stato a ogni connessione).
+- Test in tests/seats-sse.test.ts (due client + riconnessione); 74/74 verdi. Verifica in browser: ancora DA FARE. Dietro proxy (nginx) serve proxy_buffering off per /attivita/eventi.

@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { requireCan } from '../auth/permissions';
 import { listBlocks } from '../admin/settings';
 import { esc } from '../ui/layout';
+import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
 
 const KINDS: Record<string, string> = { allievo: 'Allievo', docente: 'Docente', relatore: 'Relatore' };
@@ -45,11 +46,29 @@ export async function listPage(pool: Pool, query: Record<string, unknown>): Prom
 <input type="search" name="q" value="${esc(f.q)}" placeholder="Cerca titolo, descrizione, persona">
 <button>Filtra</button></p></form>
 <div id="elenco">${[...byActivity.values()].map(card).join('') || '<p>Nessuna attività trovata.</p>'}</div>
+<script>
+(function(){
+  function show(map){
+    document.querySelectorAll('li[data-session]').forEach(function(li){
+      var s=map[li.getAttribute('data-session')]; if(!s) return;
+      li.querySelector('progress').max=s.max; li.querySelector('progress').value=s.n;
+      li.querySelector('.seats').innerHTML=s.n>=s.max?'<strong>Posti esauriti</strong>':(s.max-s.n)+' posti liberi su '+s.max;
+    });
+  }
+  // EventSource si riconnette da solo se la connessione cade; a ogni connessione il server rimanda lo stato.
+  new EventSource('/attivita/eventi').onmessage=function(e){show(JSON.parse(e.data));};
+})();
+</script>
 </body></html>`;
 }
 
 export function gaRouter(pool: Pool): Router {
   const router = Router();
+  const subscribe = createSeatsHub(pool);
+
+  router.get('/attivita/eventi', requireCan('ga.view'), (_req, res) => {
+    subscribe(res).catch(() => res.end());
+  });
 
   router.get('/attivita', requireCan('ga.view'), async (req, res, next) => {
     try {
