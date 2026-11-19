@@ -191,3 +191,7 @@
 ### US-025 (2026-11-19)
 - `missingAttendance` in src/ga/manage.ts + riquadro 'Presenze mancanti' in /gestione-ga: sessioni concluse (giorno + fine dell'ultimo blocco, ora di Zurigo; giorni 'da definire' ignorati) con iscritti e nessuna presenza segnata, con organizzatore, e-mail e telefono. Solo visualizzazione: nessuna mail (il PRD e CLAUDE.md coincidono, il sito invia solo le tre mail).
 - Test tests/missing-attendance.test.ts (ora passata come parametro); 104/104 verdi. Verifica in browser: non fatta.
+
+### US-026 (2026-11-19)
+- Migrazione `013_year_contacts.sql` (relatori/docenti riproposti come contatti dell'anno, usata da US-029). In src/ga/manage.ts: `listActivities` (tutte le attivita' dell'anno, qualsiasi stato, con blocco/giorno, aula, iscritti/max per sessione, 'sotto il minimo' sulle approvate) e `listPeople` (relatori/docenti con attivita' nell'anno o contatto riproposto, e-mail, telefono, titoli). Dettaglio con iscritti e presenze = /attivita/:id (US-024). Pagina /gestione-ga solo ga.manage (resp_ga e resp_sito).
+- Test tests/manage.test.ts; 107/107 verdi. Verifica in browser: non fatta.
