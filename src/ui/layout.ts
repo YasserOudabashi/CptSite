@@ -34,7 +34,7 @@ export function menuFor(user: User): MenuItem[] {
   return MENU.filter((i) => !i.action || can(user, i.action));
 }
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 const STYLE = `<style>

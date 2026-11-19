@@ -5,6 +5,7 @@ import { authRouter } from './auth/router';
 import { sessionMiddleware } from './auth/session';
 import { runMigrations } from './db/migrate';
 import { seed } from './db/seed';
+import { gaRouter } from './ga/router';
 import { homeRouter } from './ui/home';
 import { layoutMiddleware } from './ui/layout';
 import { processMailQueue, startMailWorker } from './mail/queue';
@@ -28,6 +29,7 @@ async function start() {
   app.use(homeRouter());
   app.use(authRouter(pool));
   app.use(adminRouter(pool));
+  app.use(gaRouter(pool));
   app.listen(Number(PORT), () => {
     console.log(`Server in ascolto sulla porta ${PORT}`);
   });

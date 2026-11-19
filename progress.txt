@@ -127,3 +127,8 @@
 - Migrazione `010_activities.sql`: `rooms`, `activities` (con `ga_day_id` = giorno scelto dal proponente, NULL se non deciso), `activity_sessions` (create all'approvazione, US-018), `enrollments` (`school_year_id` e `activity_id` riempiti dal trigger BEFORE INSERT), `enrollment_blocks` (un blocco per riga, riempita dal trigger AFTER INSERT; UNIQUE(user, giorno, blocco) impedisce sovrapposizioni anche con sessioni lunghe; violazione = errore contenente 'enrollment_blocks'). UNIQUE(user, activity) = una sola sessione per attivita ripetuta.
 - Test in tests/activities-schema.test.ts. Su Windows se npm ci fallisce con EPERM su postgres.exe c'e' un postgres di test rimasto vivo: usare npm install.
 - Verifica in browser: non applicabile.
+
+### US-015 (2026-11-19)
+- `src/ga/activities.ts` (`listSessions` con filtri, una riga per sessione), `src/ga/router.ts` (`gaRouter(pool)`, pagina GET /attivita con permesso ga.view; montato in index.ts). Tipo organizzatore = ruolo piu' alto (relatore > docente > allievo). Aggiunto resp_ga a ga.view; `esc` esportato da ui/layout.ts.
+- Ogni sessione ha <li data-session=ID> con <progress> e <span class=seats>: US-016 li aggiorna via SSE.
+- Test in tests/activities-list.test.ts (73/73 verdi). Verifica in browser: ancora DA FARE.

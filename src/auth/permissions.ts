@@ -6,7 +6,7 @@ import type { RoleCode } from '../users/roles';
 // "Organizzatore" non è un ruolo: chi ha proposto un'attività la gestisce se è allievo/docente/relatore,
 // e la verifica "solo le sue" spetta alla pagina che carica l'attività.
 const PERMISSIONS = {
-  'ga.view': ['allievo', 'docente', 'relatore'],
+  'ga.view': ['allievo', 'docente', 'relatore', 'resp_ga'],
   'ga.enroll': ['allievo', 'docente'],
   'ga.propose': ['allievo', 'docente', 'relatore'],
   'ga.myActivity': ['allievo', 'docente', 'relatore'],
