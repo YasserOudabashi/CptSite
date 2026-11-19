@@ -7,6 +7,7 @@ import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
 import { Mine, listMine, updateMine } from './mine';
+import { activityPage, setAttendance } from './attendance';
 import { applyAssign, buildPlan, undoAssign } from './assign';
 import { managePage } from './manage';
 import { programPage } from './program';
@@ -34,7 +35,7 @@ function card(rows: SessionRow[], ctx: Ctx): string {
     })
     .join('');
   return `<article style="border:1px solid #8886;border-radius:.5rem;padding:.5rem 1rem;margin:.75rem 0">
-<h2 style="margin:.25rem 0">${esc(a.title)}</h2>
+<h2 style="margin:.25rem 0"><a href="/attivita/${a.activity_id}">${esc(a.title)}</a></h2>
 <p style="margin:.25rem 0">${esc(a.description)}</p>
 <p style="margin:.25rem 0"><small>Aula: ${a.room ? esc(a.room) : 'da definire'} · ${esc(KINDS[a.organizer_kind])}: ${esc(a.organizer)}</small></p>
 <ul style="margin:.25rem 0">${sessions}</ul></article>`;
@@ -238,6 +239,34 @@ export function gaRouter(pool: Pool): Router {
       }
     });
   }
+
+  router.get('/attivita/:id(\\d+)',requireCan('ga.view'), async (req, res, next) => {
+    try {
+      const html = await activityPage(pool, req.user!, Number(req.params.id));
+      res.status(html ? 200 : 404).send(html ?? '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Attività</title></head><body><h1>Attività non trovata</h1></body></html>');
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/attivita/:id(\\d+)/presenze',requireCan('ga.view'), async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      const ids = [req.body?.present ?? []].flat().map(Number);
+      let flash = '<p><strong>Presenze salvate.</strong></p>';
+      let status = 200;
+      try {
+        await setAttendance(pool, req.user!, id, Number(req.body?.session), ids);
+      } catch (e) {
+        flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+        status = 403;
+      }
+      const html = await activityPage(pool, req.user!, id, flash);
+      res.status(html ? status : 404).send(html ?? 'Attività non trovata');
+    } catch (e) {
+      next(e);
+    }
+  });
 
   router.get('/programma', requireCan('ga.enroll'), async (req, res, next) => {
     try {

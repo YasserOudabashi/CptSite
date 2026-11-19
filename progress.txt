@@ -182,3 +182,8 @@
 - `src/ga/assign.ts`: `buildPlan` (calcolo senza scrivere: per ogni allievo registrato = ruolo allievo con password, e ogni blocco GA coperto da almeno una sessione senza iscrizione, sceglie a caso tra le sessioni con posti liberi piu' vuote, con tutti i blocchi liberi e senza ripetere l'attivita'), `applyAssign` (transazione con LOCK TABLE enrollments, solo a iscrizioni chiuse; se ci sono non assegnabili serve la spunta 'assegna comunque', mai parziale in silenzio), `undoAssign` (cancella le righe assigned dell'anno).
 - Sezione 'Assegnazione casuale' in /gestione-ga: Anteprima (allievi, blocchi, posti liberi, elenco non assegnabili, ID dell'elenco non registrati), Assegna a caso, Annulla le assegnazioni. Un blocco senza nessuna sessione non viene considerato (non si puo' assegnare nulla).
 - Test tests/assign.test.ts (max mai superati, nessun doppio impegno, anteprima che non scrive, undo, parziale); 98/98 verdi. Verifica in browser: non fatta.
+
+### US-024 (2026-11-19)
+- `src/ga/attendance.ts`: pagina GET /attivita/:id (titolo dell'attivita' nelle schede ora e' un link) con la lista iscritti e una casella 'presente' per iscritto, visibile solo all'organizzatore e a chi ha ga.manage; POST /attivita/:id/presenze (`setAttendance`: UPDATE present = (id = ANY(spuntati)), le non spuntate diventano 'assente'; organizzatore solo la sua, resp_ga tutte, solo anno corrente = sola lettura dopo il cambio anno).
+- Le presenze 'segnate' = enrollments.present non NULL (US-025 la usa). Gli anni passati sono visibili solo a chi ha ga.manage (US-028).
+- Test tests/attendance.test.ts; 102/102 verdi. Verifica in browser: non fatta.
