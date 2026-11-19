@@ -148,3 +148,8 @@
 - Pagina GET /approvazione + POST /approvazione/:id (action approve/save/reject) + GET /approvazione/materiali.csv, permesso ga.approve. Dopo l'approvazione i blocchi non si cambiano piu' da qui.
 - Il proponente vede lo stato (proposta/approvata/rifiutata + motivo) in /la-mia-attivita (US-019).
 - Test in tests/approval.test.ts; 80/80 verdi. Verifica in browser: ancora DA FARE.
+
+### US-019 (2026-11-19)
+- `src/ga/mine.ts`: `listMine` (attivita' proprie dell'anno corrente con sessioni e iscritti nome+classe), `updateMine` (UPDATE condizionato: solo organizer_id = utente, massimo non sotto il minimo ne' sotto gli iscritti di nessuna sessione). Pagina GET /la-mia-attivita e POST /la-mia-attivita/:id (permesso ga.myActivity); chi non ha proposto nulla riceve 404 con messaggio. Mostra anche stato e motivo del rifiuto (US-018).
+- Limite noto: la voce di menu 'La mia attivita'' compare a tutti gli allievi/docenti/relatori (menuFor usa solo can()); si potrebbe nascondere per chi non ha proposte. Il controllo 'massimo >= iscritti' non e' bloccante contro iscrizioni simultanee: US-021 deve controllare comunque il massimo nella propria transazione.
+- Test in tests/my-activity.test.ts; 83/83 verdi. Verifica in browser: ancora DA FARE.

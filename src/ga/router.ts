@@ -5,6 +5,7 @@ import { listBlocks, listGaDays } from '../admin/settings';
 import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { Pending, approveProposal, blockLoad, listPending, materialsCsv, materialsList, rejectProposal, saveProposal } from './approval';
+import { Mine, listMine, updateMine } from './mine';
 import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
 
@@ -155,6 +156,32 @@ ${pending.map(item).join('') || '<p>Nessuna proposta da approvare.</p>'}
 </body></html>`;
 }
 
+const STATUS: Record<string, string> = { proposta: 'in attesa di approvazione', approvata: 'approvata', rifiutata: 'rifiutata' };
+
+async function minePage(pool: Pool, userId: number, flash = ''): Promise<string | null> {
+  const mine = await listMine(pool, userId);
+  if (!mine.length) return null;
+  const item = (a: Mine) => `<section style="border:1px solid #8886;border-radius:.5rem;padding:.5rem 1rem;margin:.75rem 0">
+<h2 style="margin:.25rem 0">${esc(a.title)}</h2>
+<p>Stato: <strong>${STATUS[a.status] ?? esc(a.status)}</strong>${a.reject_reason ? ` — motivo: ${esc(a.reject_reason)}` : ''}</p>
+<form method="post" action="/la-mia-attivita/${a.id}">
+<p><label>Descrizione<br><textarea name="description" rows="3" cols="50" required>${esc(a.description)}</textarea></label></p>
+<p><label>Massimo partecipanti <input type="number" name="max" min="1" value="${a.max_participants}" required></label> <button>Salva</button></p></form>
+${a.sessions
+    .map(
+      (s) => `<h3>${esc(s.block)} · ${s.attendees.length} iscritti</h3><ul>${
+        s.attendees.map((p) => `<li>${esc(p.name)}${p.class_name ? ` (${esc(p.class_name)})` : ''}</li>`).join('') || '<li>Nessun iscritto.</li>'
+      }</ul>`,
+    )
+    .join('')}</section>`;
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>La mia attività</title></head><body>
+<h1>La mia attività</h1>
+${flash}
+${mine.map(item).join('')}
+</body></html>`;
+}
+
 export function gaRouter(pool: Pool): Router {
   const router = Router();
   const subscribe = createSeatsHub(pool);
@@ -224,6 +251,34 @@ export function gaRouter(pool: Pool): Router {
         flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
       }
       res.send(await approvalPage(pool, flash));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const noActivity = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>La mia attività</title></head><body><h1>La mia attività</h1><p>Non hai ancora proposto nessuna attività.</p></body></html>';
+
+  router.get('/la-mia-attivita', requireCan('ga.myActivity'), async (req, res, next) => {
+    try {
+      const html = await minePage(pool, req.user!.id);
+      res.status(html ? 200 : 404).send(html ?? noActivity);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/la-mia-attivita/:id', requireCan('ga.myActivity'), async (req, res, next) => {
+    try {
+      let flash = '<p><strong>Salvato.</strong></p>';
+      let status = 200;
+      try {
+        await updateMine(pool, req.user!.id, Number(req.params.id), String(req.body?.description ?? ''), Number(req.body?.max));
+      } catch (e) {
+        flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+        status = 400;
+      }
+      const html = await minePage(pool, req.user!.id, flash);
+      res.status(html ? status : 404).send(html ?? noActivity);
     } catch (e) {
       next(e);
     }
