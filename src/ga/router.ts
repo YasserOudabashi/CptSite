@@ -1,6 +1,7 @@
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import { Pool } from 'pg';
-import { requireCan } from '../auth/permissions';
+import { can, requireCan } from '../auth/permissions';
+import { STATES, cancelEnrollment, enroll, getEnrollState, mySessionIds } from './enroll';
 import { listBlocks, listGaDays } from '../admin/settings';
 import { esc } from '../ui/layout';
 import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
@@ -11,14 +12,22 @@ import { SessionRow, listRooms, listSessions } from './activities';
 
 const KINDS: Record<string, string> = { allievo: 'Allievo', docente: 'Docente', relatore: 'Relatore' };
 
-function card(rows: SessionRow[]): string {
+type Ctx = { mine: Set<number>; canEnroll: boolean; flash: string };
+
+function card(rows: SessionRow[], ctx: Ctx): string {
   const a = rows[0];
   const sessions = rows
     .map((s) => {
       const full = s.enrolled >= s.max;
       return `<li data-session="${s.session_id}">${esc(s.block)} · ${s.start}–${s.end}
 <progress value="${s.enrolled}" max="${s.max}"></progress>
-<span class="seats">${full ? '<strong>Posti esauriti</strong>' : `${s.max - s.enrolled} posti liberi su ${s.max}`}</span></li>`;
+<span class="seats">${full ? '<strong>Posti esauriti</strong>' : `${s.max - s.enrolled} posti liberi su ${s.max}`}</span>${
+        ctx.canEnroll
+          ? ctx.mine.has(s.session_id)
+            ? ` <form method="post" action="/iscrizione/${s.session_id}/annulla" style="display:inline"><button>Annulla iscrizione</button></form>`
+            : ` <form method="post" action="/iscrizione/${s.session_id}" style="display:inline"><button>Iscriviti</button></form>`
+          : ''
+      }</li>`;
     })
     .join('');
   return `<article style="border:1px solid #8886;border-radius:.5rem;padding:.5rem 1rem;margin:.75rem 0">
@@ -28,7 +37,7 @@ function card(rows: SessionRow[]): string {
 <ul style="margin:.25rem 0">${sessions}</ul></article>`;
 }
 
-export async function listPage(pool: Pool, query: Record<string, unknown>): Promise<string> {
+export async function listPage(pool: Pool, query: Record<string, unknown>, ctx: Ctx = { mine: new Set(), canEnroll: false, flash: '' }): Promise<string> {
   const s = (k: string) => String(query[k] ?? '');
   const f = { block: Number(s('block')) || undefined, room: Number(s('room')) || undefined, kind: s('kind') in KINDS ? s('kind') : undefined, q: s('q') };
   const [blocks, rooms, sessions] = await Promise.all([listBlocks(pool), listRooms(pool), listSessions(pool, f)]);
@@ -39,6 +48,7 @@ export async function listPage(pool: Pool, query: Record<string, unknown>): Prom
   return `<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Attività</title></head><body>
 <h1>Attività</h1>
+${ctx.flash}
 <form method="get" action="/attivita"><p>
 <select name="block" aria-label="Blocco">${opt(f.block, '', 'Tutti i blocchi')}${blocks
     .filter((b) => b.kind === 'blocco')
@@ -48,7 +58,7 @@ export async function listPage(pool: Pool, query: Record<string, unknown>): Prom
 <select name="kind" aria-label="Organizzatore">${opt(f.kind, '', 'Tutti gli organizzatori')}${Object.entries(KINDS).map(([k, l]) => opt(f.kind, k, l)).join('')}</select>
 <input type="search" name="q" value="${esc(f.q)}" placeholder="Cerca titolo, descrizione, persona">
 <button>Filtra</button></p></form>
-<div id="elenco">${[...byActivity.values()].map(card).join('') || '<p>Nessuna attività trovata.</p>'}</div>
+<div id="elenco">${[...byActivity.values()].map((r) => card(r, ctx)).join('') || '<p>Nessuna attività trovata.</p>'}</div>
 <script>
 (function(){
   function show(map){
@@ -105,18 +115,19 @@ ${flash}
 }
 
 async function approvalPage(pool: Pool, flash = ''): Promise<string> {
-  const [pending, blocks, rooms, load, materials] = await Promise.all([
+  const [pending, blocks, rooms, load, materials, days] = await Promise.all([
     listPending(pool),
     listBlocks(pool),
     listRooms(pool),
     blockLoad(pool),
     materialsList(pool),
+    listGaDays(pool),
   ]);
   const realBlocks = blocks.filter((b) => b.kind === 'blocco');
-  const blockOpts = (sel: number) =>
+  const blockOpts = (sel: number, dayId: number | null) =>
     realBlocks
       .map((b) => {
-        const l = load.get(b.id) ?? { activities: 0, seats: 0 };
+        const l = load.get(`${dayId ?? days[0]?.id}:${b.id}`) ?? { activities: 0, seats: 0 };
         return `<option value="${b.id}"${b.id === sel ? ' selected' : ''}>${esc(blockLabel(b))} — ${l.activities} attività, ${l.seats} posti</option>`;
       })
       .join('');
@@ -125,6 +136,7 @@ async function approvalPage(pool: Pool, flash = ''): Promise<string> {
     const sessions = Array.from({ length: a.repetitions }, (_, i) =>
       `<p><label>${a.repetitions > 1 ? `Sessione ${i + 1}` : 'Blocco definitivo'} (${a.duration_blocks} bl.) <select name="block${i + 1}">${blockOpts(
         i === 0 ? a.first_block_id : a.second_block_id,
+        a.ga_day_id,
       )}</select></label></p>`).join('');
     return `<form method="post" action="/approvazione/${a.id}" style="border:1px solid #8886;border-radius:.5rem;padding:.5rem 1rem;margin:.75rem 0">
 <h2 style="margin:.25rem 0">${esc(a.title)}</h2>
@@ -190,13 +202,39 @@ export function gaRouter(pool: Pool): Router {
     subscribe(res).catch(() => res.end());
   });
 
+  const listCtx = async (req: Request, flash = ''): Promise<Ctx> => ({
+    mine: await mySessionIds(pool, req.user!.id),
+    canEnroll: can(req.user, 'ga.enroll'),
+    flash,
+  });
+
   router.get('/attivita', requireCan('ga.view'), async (req, res, next) => {
     try {
-      res.send(await listPage(pool, req.query));
+      const state = await getEnrollState(pool);
+      const flash = `<p>Iscrizioni: <strong>${STATES[state]}</strong>.</p>`;
+      res.send(await listPage(pool, req.query, await listCtx(req, flash)));
     } catch (e) {
       next(e);
     }
   });
+
+  for (const cancel of [false, true]) {
+    router.post(cancel ? '/iscrizione/:id/annulla' : '/iscrizione/:id', requireCan('ga.enroll'), async (req, res, next) => {
+      try {
+        let flash = `<p><strong>${cancel ? 'Iscrizione annullata.' : 'Iscrizione registrata.'}</strong></p>`;
+        let status = 200;
+        try {
+          await (cancel ? cancelEnrollment : enroll)(pool, req.user!, Number(req.params.id));
+        } catch (e) {
+          flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
+          status = 400;
+        }
+        res.status(status).send(await listPage(pool, {}, await listCtx(req, flash)));
+      } catch (e) {
+        next(e);
+      }
+    });
+  }
 
   router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {
     try {

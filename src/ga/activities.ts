@@ -26,7 +26,7 @@ export async function listSessions(pool: Pool, f: Filters = {}): Promise<Session
   const where: string[] = [];
   const args: unknown[] = [];
   const p = (v: unknown) => `$${args.push(v)}`;
-  if (f.block) where.push(`s.start_block_id = ${p(f.block)}`);
+  if (f.block) where.push(`EXISTS (SELECT 1 FROM session_blocks sb WHERE sb.session_id = s.id AND sb.block_id = ${p(f.block)})`);
   if (f.room) where.push(`a.room_id = ${p(f.room)}`);
   if (f.kind) where.push(`${KIND} = ${p(f.kind)}`);
   if (f.q?.trim()) {

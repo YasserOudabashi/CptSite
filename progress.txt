@@ -161,3 +161,9 @@
 - [Nota del revisore] Conteggi per blocco (roomsWithUsage, blockLoad) e filtro blocco di /attivita: usare tutto lo span dei blocchi e il giorno, non solo start_block_id.
 - [Nota del revisore] CSRF: middleware Origin == SITE_URL (anche dalla revisione Fase 1). Menu "La mia attività" visibile anche a chi non ha attività.
 - Verify in browser di US-015..019 ancora da fare.
+
+### US-020 (2026-11-19)
+- Migrazione `012_enrollment.sql`: stato iscrizioni per anno (`school_years.enrollment_state`, default 'chiuse'; US-022 lo imposta), vista `session_blocks` (blocchi+giorno coperti da ogni sessione), trigger che vietano UPDATE di enrollments.session_id/user_id e di giorno/blocchi di activity_sessions (nota del revisore).
+- `src/ga/enroll.ts`: `enroll` (transazione con SELECT ... FOR UPDATE sull'attivita', poi conta e inserisce; errori chiari: piena, gia' iscritto, stesso blocco, chiuse, solo organizzatori) e `cancelEnrollment`. `updateMine` ora prende lo stesso lock. Il Responsabile GA ignora lo stato (ga.enroll ora include resp_ga). Pulsanti Iscriviti/Annulla sulle schede di /attivita (POST /iscrizione/:id[/annulla]).
+- Conteggi per blocco (roomsWithUsage, blockLoad con chiave giorno:blocco, filtro blocco di /attivita) usano tutto lo span via `session_blocks`.
+- Test in tests/enroll.test.ts (anche 12 iscrizioni simultanee con 3 posti); 90/90 verdi. Verifica in browser: non fatta (non possibile qui).

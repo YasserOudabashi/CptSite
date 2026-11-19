@@ -12,6 +12,7 @@ export type Pending = {
   room_id: number | null;
   duration_blocks: number;
   repetitions: number;
+  ga_day_id: number | null;
   first_block_id: number;
   second_block_id: number;
   materials: string;
@@ -22,7 +23,7 @@ export type Pending = {
 export async function listPending(pool: Pool): Promise<Pending[]> {
   const { rows } = await pool.query(
     `SELECT a.id, a.title, a.description, u.first_name || ' ' || u.last_name AS organizer, u.login_id AS email, a.contact,
-            a.room_id, a.duration_blocks, a.repetitions, a.first_block_id, a.second_block_id, a.materials,
+            a.room_id, a.duration_blocks, a.repetitions, a.ga_day_id, a.first_block_id, a.second_block_id, a.materials,
             a.min_participants, a.max_participants
      FROM activities a JOIN users u ON u.id = a.organizer_id
      WHERE a.status = 'proposta' AND a.school_year_id = (SELECT id FROM school_years WHERE is_current)
@@ -31,15 +32,15 @@ export async function listPending(pool: Pool): Promise<Pending[]> {
   return rows;
 }
 
-// Per ogni blocco: quante attività (sessioni) e quanti posti sono già approvati nell'anno corrente.
-export async function blockLoad(pool: Pool): Promise<Map<number, { activities: number; seats: number }>> {
+// Per ogni blocco e giorno (chiave "giorno:blocco"): attività (sessioni) e posti già approvati nell'anno corrente, su tutto lo span.
+export async function blockLoad(pool: Pool): Promise<Map<string, { activities: number; seats: number }>> {
   const { rows } = await pool.query(
-    `SELECT s.start_block_id AS id, count(*)::int AS activities, sum(a.max_participants)::int AS seats
-     FROM activity_sessions s JOIN activities a ON a.id = s.activity_id
+    `SELECT sb.ga_day_id AS day, sb.block_id AS id, count(*)::int AS activities, sum(a.max_participants)::int AS seats
+     FROM session_blocks sb JOIN activity_sessions s ON s.id = sb.session_id JOIN activities a ON a.id = s.activity_id
      WHERE a.status = 'approvata' AND a.school_year_id = (SELECT id FROM school_years WHERE is_current)
-     GROUP BY s.start_block_id`,
+     GROUP BY sb.ga_day_id, sb.block_id`,
   );
-  return new Map(rows.map((r) => [r.id, { activities: r.activities, seats: r.seats }]));
+  return new Map(rows.map((r) => [`${r.day}:${r.id}`, { activities: r.activities, seats: r.seats }]));
 }
 
 export type Edit = {

@@ -28,20 +28,28 @@ export async function listMine(pool: Pool, userId: number): Promise<Mine[]> {
 }
 
 // Modifica descrizione e massimo, solo delle proprie attività; il massimo non scende sotto gli iscritti di nessuna sessione.
+// Stesso lock dell'iscrizione (FOR UPDATE sull'attività): nessuna iscrizione passa mentre si cambia il massimo.
 export async function updateMine(pool: Pool, userId: number, id: number, description: string, max: number): Promise<void> {
   description = description.trim();
   if (!description) throw new Error('La descrizione è obbligatoria.');
   if (!Number.isInteger(max) || max < 1) throw new Error('Il massimo deve essere almeno 1.');
-  const { rowCount } = await pool.query(
-    `UPDATE activities SET description = $3, max_participants = $4
-     WHERE id = $1 AND organizer_id = $2 AND min_participants <= $4
-       AND NOT EXISTS (SELECT 1 FROM enrollments e JOIN activity_sessions s ON s.id = e.session_id
-                       WHERE s.activity_id = $1 GROUP BY s.id HAVING count(*) > $4)`,
-    [id, userId, description, max],
-  );
-  if (rowCount) return;
-  const own = await pool.query('SELECT min_participants FROM activities WHERE id = $1 AND organizer_id = $2', [id, userId]);
-  if (!own.rowCount) throw new Error('Attività non trovata.');
-  if (own.rows[0].min_participants > max) throw new Error('Il massimo non può essere sotto il minimo.');
-  throw new Error('Il massimo non può scendere sotto il numero di iscritti attuali.');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const own = await client.query('SELECT min_participants FROM activities WHERE id = $1 AND organizer_id = $2 FOR UPDATE', [id, userId]);
+    if (!own.rowCount) throw new Error('Attività non trovata.');
+    if (own.rows[0].min_participants > max) throw new Error('Il massimo non può essere sotto il minimo.');
+    const { rows } = await client.query(
+      `SELECT 1 FROM enrollments e JOIN activity_sessions s ON s.id = e.session_id WHERE s.activity_id = $1 GROUP BY s.id HAVING count(*) > $2`,
+      [id, max],
+    );
+    if (rows.length) throw new Error('Il massimo non può scendere sotto il numero di iscritti attuali.');
+    await client.query('UPDATE activities SET description = $2, max_participants = $3 WHERE id = $1', [id, description, max]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 }

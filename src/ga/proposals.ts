@@ -77,16 +77,18 @@ export async function createProposal(pool: Pool, userId: number, i: ProposalInpu
   return rows[0].id;
 }
 
-// Aule con i blocchi in cui sono già occupate da attività approvate dell'anno corrente.
+// Aule con i blocchi in cui sono già occupate da attività approvate dell'anno corrente (tutto lo span di ogni sessione, giorno compreso).
 export async function roomsWithUsage(pool: Pool): Promise<{ id: number; name: string; busy: string[] }[]> {
   const { rows } = await pool.query(
     `SELECT r.id, r.name,
-            COALESCE(array_agg(DISTINCT b.name) FILTER (WHERE b.id IS NOT NULL), '{}') AS busy
+            COALESCE(array_agg(DISTINCT b.name || COALESCE(' ' || to_char(d.day, 'DD.MM'), '')) FILTER (WHERE b.id IS NOT NULL), '{}') AS busy
      FROM rooms r
      LEFT JOIN activities a ON a.room_id = r.id AND a.status = 'approvata'
        AND a.school_year_id = (SELECT id FROM school_years WHERE is_current)
      LEFT JOIN activity_sessions s ON s.activity_id = a.id
-     LEFT JOIN time_blocks b ON b.id = s.start_block_id
+     LEFT JOIN session_blocks sb ON sb.session_id = s.id
+     LEFT JOIN time_blocks b ON b.id = sb.block_id
+     LEFT JOIN ga_days d ON d.id = sb.ga_day_id
      GROUP BY r.id ORDER BY lower(r.name)`,
   );
   return rows;

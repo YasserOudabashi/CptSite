@@ -7,7 +7,7 @@ import type { RoleCode } from '../users/roles';
 // e la verifica "solo le sue" spetta alla pagina che carica l'attività.
 const PERMISSIONS = {
   'ga.view': ['allievo', 'docente', 'relatore', 'resp_ga'],
-  'ga.enroll': ['allievo', 'docente'],
+  'ga.enroll': ['allievo', 'docente', 'resp_ga'],
   'ga.propose': ['allievo', 'docente', 'relatore'],
   'ga.myActivity': ['allievo', 'docente', 'relatore'],
   'ga.attendance.own': ['allievo', 'docente', 'relatore'],
