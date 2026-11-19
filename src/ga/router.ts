@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
 import { requireCan } from '../auth/permissions';
-import { listBlocks } from '../admin/settings';
+import { listBlocks, listGaDays } from '../admin/settings';
 import { esc } from '../ui/layout';
+import { createProposal, parseProposal, blockLabel, roomsWithUsage } from './proposals';
 import { createSeatsHub } from './seats';
 import { SessionRow, listRooms, listSessions } from './activities';
 
@@ -62,6 +63,45 @@ export async function listPage(pool: Pool, query: Record<string, unknown>): Prom
 </body></html>`;
 }
 
+async function proposePage(pool: Pool, user: { id: number }, v: Record<string, unknown> = {}, flash = ''): Promise<string> {
+  const [blocks, rooms, days, me] = await Promise.all([
+    listBlocks(pool),
+    roomsWithUsage(pool),
+    listGaDays(pool),
+    pool.query('SELECT first_name, last_name, login_id FROM users WHERE id = $1', [user.id]),
+  ]);
+  const g = (k: string) => esc(String(v[k] ?? ''));
+  const opt = (k: string, val: string | number, label: string) =>
+    `<option value="${val}"${String(v[k] ?? '') === String(val) ? ' selected' : ''}>${esc(label)}</option>`;
+  const blockOpts = (k: string) =>
+    `<option value="">—</option>` + blocks.filter((b) => b.kind === 'blocco').map((b) => opt(k, b.id, blockLabel(b))).join('');
+  const who = me.rows[0];
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Proponi un'attività</title></head><body>
+<h1>Proponi un'attività</h1>
+${flash}
+<form method="post" action="/proponi">
+<p><label>Organizzatore <input value="${esc(`${who.first_name} ${who.last_name} (${who.login_id})`)}" readonly size="40"></label></p>
+<p><label>Nome dell'attività <input name="title" value="${g('title')}" required maxlength="120"></label></p>
+<p><label>Breve spiegazione<br><textarea name="description" rows="4" cols="50" required>${g('description')}</textarea></label></p>
+<p><label>Telefono <input name="phone" value="${g('phone')}" required maxlength="40"></label> <small>(l'e-mail è già nota)</small></p>
+<p><label>Aula o spazio preferito <select name="room"><option value="">Nessuna preferenza</option>${rooms
+    .map((r) => opt('room', r.id, `${r.name} — ${r.busy.length ? 'occupata: ' + r.busy.join(', ') : 'libera'}`))
+    .join('')}</select></label></p>
+<p><label>Giorno <select name="day"><option value="">Da definire</option>${days
+    .map((d) => opt('day', d.id, d.day ? d.day.split('-').reverse().join('.') : 'giorno da definire'))
+    .join('')}</select></label></p>
+<p><label>Blocco di prima scelta <select name="first" required>${blockOpts('first')}</select></label></p>
+<p><label>Blocco di seconda scelta <select name="second" required>${blockOpts('second')}</select></label></p>
+<p><label>Durata (blocchi consecutivi) <input type="number" name="duration" min="1" max="4" value="${g('duration') || '1'}" required></label></p>
+<p><label><input type="checkbox" name="repeat" value="1"${v.repeat === '1' ? ' checked' : ''}> Ripeti l'attività (due volte, in due blocchi diversi, con iscritti diversi)</label></p>
+<p><label>Materiali che ti servono (es. proiettore, 10 sedie, palloni)<br><textarea name="materials" rows="2" cols="50">${g('materials')}</textarea></label></p>
+<p><label>Minimo allievi <input type="number" name="min" min="0" value="${g('min') || '0'}"></label>
+<label>Massimo allievi <input type="number" name="max" min="1" value="${g('max')}" required></label></p>
+<p><button>Invia la proposta</button></p></form>
+</body></html>`;
+}
+
 export function gaRouter(pool: Pool): Router {
   const router = Router();
   const subscribe = createSeatsHub(pool);
@@ -73,6 +113,28 @@ export function gaRouter(pool: Pool): Router {
   router.get('/attivita', requireCan('ga.view'), async (req, res, next) => {
     try {
       res.send(await listPage(pool, req.query));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {
+    try {
+      res.send(await proposePage(pool, req.user!));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/proponi', requireCan('ga.propose'), async (req, res, next) => {
+    try {
+      const body = req.body ?? {};
+      try {
+        await createProposal(pool, req.user!.id, parseProposal(body));
+        res.send(await proposePage(pool, req.user!, {}, "<p><strong>Proposta inviata: sarà visibile dopo l'approvazione.</strong></p>"));
+      } catch (e) {
+        res.status(400).send(await proposePage(pool, req.user!, body, `<p><strong>${esc((e as Error).message)}</strong></p>`));
+      }
     } catch (e) {
       next(e);
     }

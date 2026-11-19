@@ -137,3 +137,8 @@
 - Migrazione `011_seat_notify.sql`: trigger statement-level che fanno pg_notify('ga_seats') su enrollments (I/D), activity_sessions (I/D), activities (UPDATE): chi cambia iscrizioni, sessioni o max partecipanti (US-018/019/021) non deve fare altro.
 - `src/ga/seats.ts` (`createSeatsHub`): un solo client pg in LISTEN finche' c'e' un browser collegato (rilasciato con release(true)); a ogni notifica manda a tutti lo stato completo {sessione: {n, max}}. Endpoint GET /attivita/eventi (SSE, heartbeat 25 s). Il client in /attivita usa EventSource (si riconnette da solo; il server rimanda lo stato a ogni connessione).
 - Test in tests/seats-sse.test.ts (due client + riconnessione); 74/74 verdi. Verifica in browser: ancora DA FARE. Dietro proxy (nginx) serve proxy_buffering off per /attivita/eventi.
+
+### US-017 (2026-11-19)
+- `src/ga/proposals.ts`: `parseProposal`, `createProposal` (controlli: obbligatori, min<=max, prima/seconda scelta diverse e obbligatorie, durata via `blockSpan`: blocchi consecutivi con pausa <= 30 min, quindi non attraversa il pranzo ne' la fine giornata), `roomsWithUsage` (aule con i blocchi gia' occupati da attivita' approvate). Pagina GET/POST /proponi (permesso ga.propose) in ga/router.ts; stato iniziale 'proposta', non compare in /attivita.
+- Le sessioni (activity_sessions) NON si creano alla proposta ma all'approvazione (US-018). Con 'Ripeti' (repetitions=2) la prima sessione usa il blocco scelto, la seconda un altro blocco diverso.
+- Test in tests/propose.test.ts; 77/77 verdi. Verifica in browser: ancora DA FARE.
