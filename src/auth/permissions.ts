@@ -15,6 +15,7 @@ const PERMISSIONS = {
   'ga.manage': ['resp_ga'],
   'ga.approve': ['resp_ga'],
   'ga.contacts': ['resp_ga'],
+  'tornei.manage': ['resp_tornei'],
   'poll.vote': ['allievo', 'docente'],
   'poll.create': ['resp_ga'],
   'admin.users': [],

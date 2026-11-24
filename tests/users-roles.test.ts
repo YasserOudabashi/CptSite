@@ -22,7 +22,7 @@ test('ruoli iniziali presenti', async () => {
   const { rows } = await pool.query('SELECT code FROM roles ORDER BY code');
   assert.deepEqual(
     rows.map((r: { code: string }) => r.code),
-    ['allievo', 'docente', 'relatore', 'resp_ga', 'resp_sito'],
+    ['allievo', 'docente', 'relatore', 'resp_ga', 'resp_sito', 'resp_tornei'],
   );
 });
 
