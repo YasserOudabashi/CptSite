@@ -15,6 +15,7 @@ const MENU: MenuItem[] = [
   { label: 'Attività', href: '/attivita', action: 'ga.view' },
   { label: 'Il mio programma', href: '/programma', action: 'ga.enroll' },
   { label: 'Tornei', href: '/tornei' },
+  { label: 'Le mie partite', href: '/tornei/mie' },
   { label: 'Proponi attività', href: '/proponi', action: 'ga.propose' },
   { label: 'La mia attività', href: '/la-mia-attivita', action: 'ga.myActivity' },
   { label: 'Approvazione', href: '/approvazione', action: 'ga.approve' },

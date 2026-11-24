@@ -11,6 +11,7 @@ import { addEvent, canEnter, loadMatch, removeEvent, resultPage, saveResult } fr
 import { bracketHtml, matchLine, scorersHtml, standingsHtml } from './view';
 import { groupStandings, scorers } from './advance';
 import { createLiveHub, liveScript } from './live';
+import { myMatches, myMatchesHtml } from './mine';
 import { doc, go, localInput, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
@@ -107,22 +108,52 @@ export function torneiRouter(pool: Pool): Router {
     }
   });
 
+  // "Le mie partite": prossime partite come giocatore o come arbitro.
+  router.get('/tornei/mie', async (req, res, next) => {
+    try {
+      const rows = await myMatches(pool, req.user!.id);
+      res.send(doc('Le mie partite', `<h1>Le mie partite</h1>${rows.length ? myMatchesHtml(rows) : '<p>Nessuna partita in programma.</p>'}`));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const dayOf = (d: Date | null) => (d ? d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Zurich' }) : '');
+
+  // Pagina del torneo. ?giorno=AAAA-MM-GG &campo=ID &squadra=ID filtrano il calendario; ?schermo=1 = vista a schermo intero per il proiettore (senza menu né moduli).
   router.get('/tornei/:id(\\d+)', async (req, res, next) => {
     try {
       const t = await load(req);
       if (!t) return void res.status(404).send('Torneo non trovato');
-      const manage = await canManage(pool, req.user, t.id);
-      const matches = await loadMatches(pool, t.id);
+      const screen = req.query.schermo === '1';
+      const manage = !screen && (await canManage(pool, req.user, t.id));
+      const all = await loadMatches(pool, t.id);
       const org = await isOrganizer(pool, t.id, req.user!.id);
       const gmap = new Map((await pool.query<{ id: number; name: string }>('SELECT id, name FROM tournament_groups WHERE tournament_id = $1', [t.id])).rows.map((g) => [g.id, g.name]));
+      const f = { giorno: String(req.query.giorno ?? ''), campo: Number(req.query.campo) || 0, squadra: Number(req.query.squadra) || 0 };
+      const shown = all.filter((m) => (!f.giorno || dayOf(m.starts_at) === f.giorno) && (!f.campo || m.field_id === f.campo) && (!f.squadra || m.home_id === f.squadra || m.away_id === f.squadra));
+      const days = [...new Set(all.map((m) => dayOf(m.starts_at)).filter(Boolean))].sort();
+      const teams = await listTeams(pool, t);
+      const fields = await listFields(pool, t.id);
+      const o = (v: string | number, cur: string | number, label: string) => `<option value="${v}"${String(v) === String(cur || '') ? ' selected' : ''}>${esc(label)}</option>`;
+      const filters = all.length && !screen
+        ? `<form method="get" action="/tornei/${t.id}"><p><select name="giorno" aria-label="Giorno">${o('', f.giorno, 'Tutti i giorni')}${days.map((d) => o(d, f.giorno, d.split('-').reverse().join('.'))).join('')}</select>
+<select name="campo" aria-label="Campo">${o('', f.campo, 'Tutti i campi')}${fields.map((x) => o(x.id, f.campo, x.name)).join('')}</select>
+<select name="squadra" aria-label="Squadra">${o('', f.squadra, 'Tutte le squadre')}${teams.map((x) => o(x.id, f.squadra, x.name)).join('')}</select> <button>Filtra</button></p></form>`
+        : '';
+      const calendar = all.length
+        ? `<h2>Classifiche e tabellone</h2>${standingsHtml(await groupStandings(pool, t), t.score_type === 'set')}${bracketHtml(all, gmap)}${scorersHtml(await scorers(pool, t.id))}<h2>Partite</h2><ul>${shown.map((m) => matchLine(m, all, gmap, !screen && (org || m.referee_id === req.user!.id))).join('') || '<li>Nessuna partita con questi filtri.</li>'}</ul>`
+        : '';
+      const head = screen ? '<style>html body>header{display:none}html body>main{max-width:none;font-size:1.25rem}</style>' : '<style>@media print{body>header,nav,form,.noprint{display:none!important}}</style>';
       res.send(doc(t.name, `<h1>${esc(t.name)}</h1>${takeFlash(req, res)}
-<p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}</p>
-${manage ? `<p><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
-<p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>
+<p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}${screen ? '' : ` · <a href="/tornei/${t.id}?schermo=1">Schermo intero</a>`}</p>
+${manage ? `<p class="noprint"><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
+<p>${esc(t.description)}</p>${screen ? '' : `<h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>`}
+${filters}
 <div id="live">
-${teamsSection(t, await listTeams(pool, t), req.user!, manage)}
-${matches.length ? `<h2>Classifiche e tabellone</h2>${standingsHtml(await groupStandings(pool, t), t.score_type === 'set')}${bracketHtml(matches, gmap)}${scorersHtml(await scorers(pool, t.id))}<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap, org || m.referee_id === req.user!.id)).join('')}</ul>` : ''}
-</div>${t.status === 'bozza' ? '' : liveScript(t.id)}`));
+${screen ? '' : teamsSection(t, teams, req.user!, manage || org)}
+${calendar}
+</div>${t.status === 'bozza' ? '' : liveScript(t.id)}`, head));
     } catch (e) {
       next(e);
     }
