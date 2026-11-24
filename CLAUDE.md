@@ -3,7 +3,7 @@
 Sito in tempo reale per gestire le Giornate Autogestite (GA), poi Assemblea paritetica ed Eco Comitato. Autore: Yasser Oudabashi (presidente dell'Assemblea paritetica del CPT Trevano; tutto il lavoro è per il CPT). Il Lilu2 è un'altra scuola: lo usiamo solo come esempio e come fonte dei contatti dei relatori.
 
 ## Stato
-Sito in sviluppo: Fase 1 (fondamenta, US-001–013) completata il 12.11.2026 con ralph (Sonnet 5.5) + revisione (Fable 5.2); punti aperti della revisione in `progress.txt`. Test su Windows: `npm ci` poi `npm test` (66 test). (Regola d'oro sull'analisi del sito Lilu2 rimossa il 15.10: non serve più.) Copie dei file sorgente nelle cartelle sotto (originali in `D:\003-School\001-Samt\zDocumenti\`).
+Sito: tutte le 39 storie (Fasi 1-6: fondamenta, attività GA, iscrizioni, presenze e gestione, anni e Home, tornei) implementate e controllate al 24.11.2026 (sviluppo Sonnet 5.5, controlli Opus 5.5 perché Fable 5.2 chiedeva crediti), correzioni e giro di sicurezza fatti (CSRF Origin, limite 300/ora per IP + 5/ora per persona, pulizia periodica, mail di apertura una sola volta). Test su Windows: `npm ci` poi `npm test` (200 test). MANCA: verifica nel browser di tutte le pagine e pubblicazione (capilab). Punti minori aperti in `progress.txt`. (Regola d'oro sull'analisi del sito Lilu2 rimossa il 15.10: non serve più.) Copie dei file sorgente nelle cartelle sotto (originali in `D:\003-School\001-Samt\zDocumenti\`).
 
 ## Mappa cartelle
 - `GA/` — tabella proposte (`01._tabella-autogestite-finale-CSIA.xlsx`, ~215 righe), `Excel generale.xlsx` (orari + attività + numero allievi), `GA.docx` (to-do e attività).
@@ -79,7 +79,7 @@ Verbale e compiti in `GA/Riunione_GA_1_2026-10-22.docx`. Orari definitivi confer
 - **Outlook (ssl586)**: cartelle Eco Comitato, Assemblea paritetica, GA, Capilab, Direzione, Scuola - lezioni e docenti, Newsletter e avvisi, fcj894 (amico). Push su GitHub dopo ogni controllo che passa.
 
 ## Decisioni e appunti (12–13.11)
-- **Limite per IP** di registrazione/recupero password: approvato 300/ora per IP + 5/ora per persona (da implementare).
+- **Limite per IP** di registrazione/recupero password: 300/ora per IP + 5/ora per persona (implementato).
 - **Data GA approvata: mercoledì 21 aprile 2027** (un giorno). Altri licei: Liceo 1 23–24.3 · Liceo 2 12–13.4 · Liceo 3 13–14.4 · Liceo Belli 8–10.3 (da confermare) · Liceo Mendrisio 15–16.3 · Liceo Locarno 22–23.3 · SCC Belli 15–16.3 (o solo 15). Nessuna sovrapposizione.
 - Chiedere in che giorno sono le giornate sportive (se non c'è la settimana bianca).
 - **Nicola** vuole occuparsi dell'assegnazione delle aule alle attività.
