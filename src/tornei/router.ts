@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { can } from '../auth/permissions';
 import { esc } from '../ui/layout';
 import { CRITERIA, FORMATS, Tournament, addField, addPerson, approvedActivities, canCreate, canManage, canSee, createTournament, getTournament, hasMatches, listFields, people, removeField, removePerson, setStatus, updateTournament } from './service';
+import { addMember, addTeamManual, approveTeam, confirmMember, joinTournament, listTeams, removeMember, teamsSection, withdrawTeam } from './teams';
 import { doc, go, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
@@ -51,7 +52,7 @@ export function torneiRouter(pool: Pool): Router {
       const visible: (Tournament & { teams: number })[] = [];
       for (const t of rows) if (await canSee(pool, user, t)) visible.push(t);
       const items = visible
-        .map((t) => `<li><a href="/tornei/${t.id}">${esc(t.name)}</a> · ${esc(t.sport)} · ${t.status} · ${t.teams}/${t.max_teams} ${t.mode === 'singoli' ? 'iscritti' : 'squadre'}</li>`)
+        .map((t) => `<li><a href="/tornei/${t.id}">${esc(t.name)}</a> · ${esc(t.sport)} · ${t.status} · ${t.teams}/${t.max_teams} ${t.mode === 'singoli' ? 'iscritti' : 'squadre'} (${Math.max(0, t.max_teams - t.teams)} posti rimasti)</li>`)
         .join('');
       res.send(doc('Tornei', `<h1>Tornei</h1>${takeFlash(req, res)}${(await canCreate(pool, user)) ? '<p><a href="/tornei/nuovo">Crea un torneo</a></p>' : ''}<ul>${items || '<li>Nessun torneo.</li>'}</ul>`));
     } catch (e) {
@@ -96,7 +97,8 @@ export function torneiRouter(pool: Pool): Router {
       res.send(doc(t.name, `<h1>${esc(t.name)}</h1>${takeFlash(req, res)}
 <p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}</p>
 ${manage ? `<p><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
-<p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>`));
+<p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>
+${teamsSection(t, await listTeams(pool, t), req.user!, manage)}`));
     } catch (e) {
       next(e);
     }
@@ -159,6 +161,31 @@ ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
   act('persone/:kind/togli', (req, id) => removePerson(pool, req.user!, id, kinds[req.params.kind as keyof typeof kinds] ?? 'referees', Number(req.body.user)));
   act('campi', (req, id) => addField(pool, req.user!, id, String(req.body.name ?? '')));
   act('campi/:fid/togli', (req, id) => removeField(pool, req.user!, id, Number(req.params.fid)));
+
+  // --- iscrizione di squadre e giocatori (esito nel cookie, ritorno alla pagina del torneo)
+  const join = (path: string, fn: (req: Request, id: number) => Promise<void>, ok: string) =>
+    router.post(`/tornei/:id(\\d+)/${path}`, async (req, res, next) => {
+      try {
+        const id = Number(req.params.id);
+        let m = ok;
+        try {
+          await fn(req, id);
+        } catch (e) {
+          m = (e as Error).message;
+        }
+        go(res, `/tornei/${id}`, m);
+      } catch (e) {
+        next(e);
+      }
+    });
+  const team = (req: Request) => Number(req.params.team);
+  join('squadre', (req, id) => joinTournament(pool, req.user!, id, String(req.body.name ?? '')), 'Iscrizione registrata.');
+  join('squadre/manuale', (req, id) => addTeamManual(pool, req.user!, id, String(req.body.name ?? ''), String(req.body.q ?? '')), 'Aggiunto.');
+  join('squadre/:team(\\d+)/membri', (req, id) => addMember(pool, req.user!, id, team(req), String(req.body.q ?? '')), 'Compagno aggiunto: deve confermare dal sito.');
+  join('squadre/:team(\\d+)/membri/:uid(\\d+)/togli', (req, id) => removeMember(pool, req.user!, id, team(req), Number(req.params.uid)), 'Giocatore tolto.');
+  join('squadre/:team(\\d+)/conferma', (req, id) => confirmMember(pool, req.user!, id, team(req)), 'Hai confermato.');
+  join('squadre/:team(\\d+)/ritira', (req, id) => withdrawTeam(pool, req.user!, id, team(req)), 'Squadra ritirata.');
+  join('squadre/:team(\\d+)/approva', (req, id) => approveTeam(pool, req.user!, id, team(req), req.body.to === '1'), 'Fatto.');
 
   return router;
 }
