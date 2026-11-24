@@ -2,11 +2,12 @@ import { Request, Router } from 'express';
 import { Pool } from 'pg';
 import { can } from '../auth/permissions';
 import { esc } from '../ui/layout';
-import { CRITERIA, FORMATS, Tournament, addField, addPerson, approvedActivities, canCreate, canManage, canSee, createTournament, getTournament, hasMatches, listFields, people, removeField, removePerson, setStatus, updateTournament } from './service';
+import { CRITERIA, FORMATS, Tournament, addField, addPerson, approvedActivities, canCreate, canManage, canSee, createTournament, getTournament, hasMatches, isOrganizer, listFields, people, removeField, removePerson, setStatus, updateTournament } from './service';
 import { addMember, addTeamManual, approveTeam, confirmMember, joinTournament, listTeams, removeMember, teamsSection, withdrawTeam } from './teams';
 import { generateCalendar, previewHtml, previewPlan, setSeedNo } from './calendar';
 import { loadMatches, roundName, slotLabel } from './matches';
 import { autoAssign, editMatch, gaWarnings } from './schedule';
+import { addEvent, canEnter, loadMatch, removeEvent, resultPage, saveResult } from './results';
 import { matchLine } from './view';
 import { doc, go, localInput, takeFlash } from './ui';
 
@@ -99,13 +100,14 @@ export function torneiRouter(pool: Pool): Router {
       if (!t) return void res.status(404).send('Torneo non trovato');
       const manage = await canManage(pool, req.user, t.id);
       const matches = await loadMatches(pool, t.id);
+      const org = await isOrganizer(pool, t.id, req.user!.id);
       const gmap = new Map((await pool.query<{ id: number; name: string }>('SELECT id, name FROM tournament_groups WHERE tournament_id = $1', [t.id])).rows.map((g) => [g.id, g.name]));
       res.send(doc(t.name, `<h1>${esc(t.name)}</h1>${takeFlash(req, res)}
 <p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}</p>
 ${manage ? `<p><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
 <p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>
 ${teamsSection(t, await listTeams(pool, t), req.user!, manage)}
-${matches.length ? `<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap)).join('')}</ul>` : ''}`));
+${matches.length ? `<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap, org || m.referee_id === req.user!.id)).join('')}</ul>` : ''}`));
     } catch (e) {
       next(e);
     }
@@ -294,6 +296,48 @@ ${(warns.get(m.id) ?? []).map((w) => `<br><em>Attenzione: ${esc(w)}</em>`).join(
     });
   prog('programma/auto', async (req, id) => `Assegnate ${await autoAssign(pool, req.user!, id, String(req.body.start ?? ''), Number(req.body.pause))} partite.`);
   prog('partite/:mid(\\d+)/orario', (req, id) => editMatch(pool, req.user!, id, Number(req.params.mid), req.body));
+
+  // --- risultati (solo arbitro della partita e organizzatori del torneo)
+  router.get('/tornei/:id(\\d+)/partite/:mid(\\d+)', async (req, res, next) => {
+    try {
+      const t = await load(req);
+      const m = t && (await loadMatch(pool, t.id, Number(req.params.mid)));
+      if (!t || !m) return void res.status(404).send('Partita non trovata');
+      if (!(await canEnter(pool, req.user, t.id, m))) return void res.status(403).send("Solo l'arbitro della partita e gli organizzatori inseriscono i risultati.");
+      res.send(doc('Risultato', `${takeFlash(req, res)}<p><a href="/tornei/${t.id}">${esc(t.name)}</a></p>${await resultPage(pool, t, m)}`));
+    } catch (e) {
+      next(e);
+    }
+  });
+  const res_ = (path: string, fn: (req: Request, id: number, mid: number) => Promise<string>) =>
+    router.post(`/tornei/:id(\\d+)/partite/:mid(\\d+)/${path}`, async (req, res, next) => {
+      try {
+        const id = Number(req.params.id);
+        const mid = Number(req.params.mid);
+        let m: string;
+        try {
+          m = await fn(req, id, mid);
+        } catch (e) {
+          m = (e as Error).message;
+        }
+        go(res, `/tornei/${id}/partite/${mid}`, m);
+      } catch (e) {
+        next(e);
+      }
+    });
+  res_('risultato', async (req, id, mid) => {
+    const sets = ([] as string[]).concat((req.body.sets as string | string[] | undefined) ?? []);
+    await saveResult(pool, req.user!, id, mid, { ...req.body, sets });
+    return 'Risultato salvato.';
+  });
+  res_('eventi', async (req, id, mid) => {
+    await addEvent(pool, req.user!, id, mid, Number(req.body.user), String(req.body.kind));
+    return 'Evento aggiunto.';
+  });
+  res_('eventi/:eid(\\d+)/togli', async (req, id, mid) => {
+    await removeEvent(pool, req.user!, id, mid, Number(req.params.eid));
+    return 'Evento tolto.';
+  });
 
   return router;
 }

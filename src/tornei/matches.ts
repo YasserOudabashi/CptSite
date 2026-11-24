@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 
 export interface MatchRow {
   id: number;
+  tournament_id: number;
   stage: 'girone' | 'eliminazione';
   group_id: number | null;
   group_name: string | null;
