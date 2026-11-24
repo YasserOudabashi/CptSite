@@ -21,7 +21,7 @@ before(async () => {
     const a = (await pool.query(`INSERT INTO activities (school_year_id, title, organizer_id, status, max_participants) VALUES ($1,$2,$3,'approvata',$4) RETURNING id`, [year, t, org, max])).rows[0].id;
     await pool.query('INSERT INTO activity_sessions (activity_id, ga_day_id, start_block_id) VALUES ($1,$2,$3)', [a, day, b[blk]]);
   }
-  await pool.query('INSERT INTO student_ids (school_year_id, login_id) VALUES ($1,$2), ($1,$3)', [year, 'reg0', 'mai-registrato']);
+  await pool.query('INSERT INTO student_ids (school_year_id, login_id) VALUES ($1,$2)', [year, 'mai-registrato']);
 });
 after(async () => stopDb());
 
@@ -29,6 +29,7 @@ async function students(count: number): Promise<number[]> {
   const ids: number[] = [];
   for (let i = 0; i < count; i++) {
     const id = (await pool.query(`INSERT INTO users (login_id, first_name, last_name, password_hash) VALUES ($1,'S',$2,'h') RETURNING id`, [`reg${n}`, `S${n}`])).rows[0].id;
+    await pool.query('INSERT INTO student_ids (school_year_id, login_id) VALUES ($1,$2)', [year, `reg${n}`]);
     n++;
     await pool.query(`INSERT INTO user_roles VALUES ($1,'allievo')`, [id]);
     ids.push(id);

@@ -70,25 +70,28 @@ test('iscrizioni chiuse: rifiutate con messaggio, anche via pagina', async () =>
   await state('chiuse');
   await assert.rejects(enroll(pool, U(u), sess.A), /chiuse/);
   current = u;
-  const r = await fetch(`${base}/iscrizione/${sess.A}`, { method: 'POST' });
-  assert.equal(r.status, 400);
-  assert.match(await r.text(), /chiuse/);
+  const r = await fetch(`${base}/iscrizione/${sess.A}`, { method: 'POST', redirect: 'manual' });
+  assert.equal(r.status, 303);
+  assert.equal(r.headers.get('location'), '/attivita');
+  assert.match(decodeURIComponent(r.headers.get('set-cookie') ?? ''), /chiuse/);
 });
 
 test('solo organizzatori: passa chi ha un\'attività approvata, gli altri no', async () => {
   await state('solo_organizzatori');
   const u = await mkUser('u2');
   await assert.rejects(enroll(pool, U(u), sess.A), /solo a chi ha/);
-  const org = (await pool.query(`SELECT id FROM users WHERE login_id = 'org'`)).rows[0].id;
+  const org = await mkUser('org2');
+  await mk('F', org, 5, 3); // blocco 4: libero per iscriversi al blocco 1
   await enroll(pool, U(org), sess.A);
   await cancelEnrollment(pool, U(org), sess.A);
+  await assert.rejects(enroll(pool, U(org), sess.F), /impegnato/); // FR-10: blocco 4 occupato dalla sua attività
 });
 
 test('aperte: iscrizione, pulsanti, piena, stesso blocco, annullamento e posto liberato', async () => {
   await state('aperte');
   const [u1, u2, u3] = [await mkUser('p1'), await mkUser('p2'), await mkUser('p3')];
   current = u1;
-  assert.equal((await fetch(`${base}/iscrizione/${sess.A}`, { method: 'POST' })).status, 200);
+  assert.equal((await fetch(`${base}/iscrizione/${sess.A}`, { method: 'POST', redirect: 'manual' })).status, 303);
   assert.match(await (await fetch(`${base}/attivita`)).text(), /Annulla iscrizione/);
   await enroll(pool, U(u2), sess.A);
   await assert.rejects(enroll(pool, U(u3), sess.A), /piena/);

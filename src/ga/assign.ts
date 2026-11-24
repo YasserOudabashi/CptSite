@@ -23,10 +23,11 @@ const shuffle = <T>(a: T[]): T[] => {
 // cerca una sessione con posti liberi i cui blocchi siano tutti liberi per lui (niente doppi impegni, mai la stessa attività due volte).
 export async function buildPlan(q: Q): Promise<Plan> {
   const year = (await q.query('SELECT id FROM school_years WHERE is_current')).rows[0].id;
-  const [students, sessions, taken, acts, positions, list] = await Promise.all([
+  const [students, sessions, taken, acts, positions, list, organizing] = await Promise.all([
     q.query(`SELECT u.id, u.last_name || ' ' || u.first_name AS name FROM users u
              WHERE u.password_hash IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role_code = 'allievo')
-             ORDER BY u.id`),
+               AND (NOT EXISTS (SELECT 1 FROM student_ids si WHERE si.school_year_id = $1) OR EXISTS (SELECT 1 FROM student_ids si WHERE si.school_year_id = $1 AND lower(si.login_id) = lower(u.login_id)))
+             ORDER BY u.id`, [year]),
     q.query(
       `SELECT s.id, s.activity_id AS act, s.ga_day_id AS day, a.max_participants - (SELECT count(*) FROM enrollments e WHERE e.session_id = s.id) AS free,
               (SELECT array_agg(sb.block_id) FROM session_blocks sb WHERE sb.session_id = s.id) AS blocks
@@ -40,6 +41,9 @@ export async function buildPlan(q: Q): Promise<Plan> {
              FROM time_blocks b CROSS JOIN ga_days d WHERE b.kind = 'blocco' AND d.school_year_id = $1 ORDER BY d.day NULLS LAST, d.id, b.position`, [year]),
     q.query(`SELECT s.login_id FROM student_ids s WHERE s.school_year_id = $1
              AND NOT EXISTS (SELECT 1 FROM users u WHERE lower(u.login_id) = lower(s.login_id) AND u.password_hash IS NOT NULL) ORDER BY s.login_id`, [year]),
+    // Blocchi in cui l'utente organizza un'attività approvata: sono occupati (FR-10).
+    q.query(`SELECT a.organizer_id AS user_id, sb.ga_day_id, sb.block_id FROM session_blocks sb JOIN activity_sessions s ON s.id = sb.session_id
+             JOIN activities a ON a.id = s.activity_id WHERE a.status = 'approvata' AND a.school_year_id = $1`, [year]),
   ]);
   const free = new Map<number, number>(sessions.rows.map((s) => [s.id, Number(s.free)]));
   // blocchi (giorno:blocco) coperti da almeno una sessione: solo questi si possono riempire
@@ -47,6 +51,7 @@ export async function buildPlan(q: Q): Promise<Plan> {
   const slotInfo = positions.rows.filter((p) => covered.has(`${p.day_id}:${p.id}`));
   const busy = new Map<number, Set<string>>();
   for (const t of taken.rows) busy.set(t.user_id, (busy.get(t.user_id) ?? new Set()).add(`${t.ga_day_id}:${t.block_id}`));
+  for (const t of organizing.rows) busy.set(t.user_id, (busy.get(t.user_id) ?? new Set()).add(`${t.ga_day_id}:${t.block_id}`));
   const done = new Map<number, Set<number>>();
   for (const e of acts.rows) done.set(e.user_id, (done.get(e.user_id) ?? new Set()).add(e.activity_id));
 
@@ -93,6 +98,8 @@ export async function applyAssign(pool: Pool, allowPartial: boolean): Promise<Pl
     await client.query('BEGIN');
     // Blocca iscrizioni e annullamenti mentre si assegna.
     await client.query('LOCK TABLE enrollments IN SHARE ROW EXCLUSIVE MODE');
+    // Stesso lock di updateMine: nessuna modifica del massimo mentre si calcola il piano.
+    await client.query(`SELECT 1 FROM activities WHERE school_year_id = (SELECT id FROM school_years WHERE is_current) AND status = 'approvata' FOR UPDATE`);
     const state = (await client.query('SELECT enrollment_state s FROM school_years WHERE is_current')).rows[0].s;
     if (state !== 'chiuse') throw new Error('L\'assegnazione casuale si fa a iscrizioni chiuse.');
     const plan = await buildPlan(client);
@@ -113,7 +120,11 @@ export async function applyAssign(pool: Pool, allowPartial: boolean): Promise<Pl
 }
 
 // Annulla in blocco tutte le assegnazioni casuali dell'anno corrente.
+// Solo a iscrizioni chiuse (come l'assegnazione) e mai le iscrizioni con presenza già segnata.
 export async function undoAssign(pool: Pool): Promise<number> {
-  const { rowCount } = await pool.query('DELETE FROM enrollments WHERE assigned AND school_year_id = (SELECT id FROM school_years WHERE is_current)');
+  if ((await pool.query('SELECT enrollment_state s FROM school_years WHERE is_current')).rows[0].s !== 'chiuse') {
+    throw new Error('Le assegnazioni si annullano a iscrizioni chiuse.');
+  }
+  const { rowCount } = await pool.query('DELETE FROM enrollments WHERE assigned AND present IS NULL AND school_year_id = (SELECT id FROM school_years WHERE is_current)');
   return rowCount ?? 0;
 }

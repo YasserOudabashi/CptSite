@@ -78,6 +78,7 @@ export async function sendEnrollmentOpen(
       [jobId],
     );
     recipients = inserted.rowCount ?? 0;
+    await client.query('UPDATE school_years SET enrollment_mail_sent_at = now() WHERE id = $1', [year.id]);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

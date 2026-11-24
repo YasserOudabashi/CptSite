@@ -41,6 +41,14 @@ export async function enroll(pool: Pool, user: User, sessionId: number): Promise
     if ((await client.query('SELECT 1 FROM enrollments WHERE user_id = $1 AND activity_id = $2', [user.id, s.rows[0].activity_id])).rowCount) {
       throw new Error('Sei già iscritto a questa attività.');
     }
+    // Blocchi in cui l'utente organizza un'attività approvata contano come occupati (FR-10).
+    if ((await client.query(
+      `SELECT 1 FROM session_blocks t JOIN activity_sessions ts ON ts.id = t.session_id
+       JOIN session_blocks o ON o.block_id = t.block_id AND o.ga_day_id = t.ga_day_id
+       JOIN activity_sessions os ON os.id = o.session_id JOIN activities oa ON oa.id = os.activity_id
+       WHERE t.session_id = $2 AND oa.organizer_id = $1 AND oa.status = 'approvata' AND oa.school_year_id = (SELECT id FROM school_years WHERE is_current) LIMIT 1`,
+      [user.id, sessionId],
+    )).rowCount) throw new Error('Sei già impegnato in quel blocco con la tua attività.');
     const n = (await client.query('SELECT count(*)::int AS n FROM enrollments WHERE session_id = $1', [sessionId])).rows[0].n;
     if (n >= a.max) throw new Error('Attività piena: non ci sono più posti.');
     try {
@@ -62,14 +70,15 @@ export async function enroll(pool: Pool, user: User, sessionId: number): Promise
 
 export async function cancelEnrollment(pool: Pool, user: User, sessionId: number): Promise<void> {
   const { rows } = await pool.query(
-    `SELECT y.enrollment_state AS state, ${isOrganizerQ} AS organizer
+    `SELECT y.enrollment_state AS state, e.present, ${isOrganizerQ} AS organizer
      FROM enrollments e JOIN school_years y ON y.id = e.school_year_id AND y.is_current
      WHERE e.user_id = $1 AND e.session_id = $2`,
     [user.id, sessionId],
   );
   if (!rows[0]) throw new Error('Non sei iscritto a questa sessione.');
+  if (rows[0].present !== null) throw new Error('La presenza è già stata segnata: l\'iscrizione non si annulla più.');
   checkState(rows[0].state, user, rows[0].organizer);
-  await pool.query('DELETE FROM enrollments WHERE user_id = $1 AND session_id = $2', [user.id, sessionId]);
+  await pool.query('DELETE FROM enrollments WHERE user_id = $1 AND session_id = $2 AND present IS NULL', [user.id, sessionId]);
 }
 
 // Sessioni a cui l'utente è iscritto nell'anno corrente.
@@ -95,7 +104,7 @@ export async function openEnrollment(pool: Pool, userId: number, resend: boolean
     if (rows[0].sent && !resend) {
       throw new Error('La mail di apertura è già stata inviata quest\'anno: per reinviarla spunta la conferma.');
     }
-    await client.query(`UPDATE school_years SET enrollment_state = 'aperte', enrollment_mail_sent_at = now() WHERE is_current`);
+    await client.query(`UPDATE school_years SET enrollment_state = 'aperte' WHERE is_current`);
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK');
@@ -103,6 +112,6 @@ export async function openEnrollment(pool: Pool, userId: number, resend: boolean
   } finally {
     client.release();
   }
-  // Dopo il commit: la mail è in coda nel database e il worker riprova se qualche invio fallisce.
+  // Dopo il commit: sendEnrollmentOpen segna enrollment_mail_sent_at solo quando l'accodamento è riuscito; il worker riprova gli invii falliti.
   return (await sendEnrollmentOpen(pool, { createdBy: userId })).recipients;
 }

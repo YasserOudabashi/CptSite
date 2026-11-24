@@ -72,15 +72,20 @@ export function toXlsx(rows: string[][], sheet = 'Foglio1'): Buffer {
 export async function exportRows(pool: Pool, what: What, yearId: number, f: ExportFilters = {}): Promise<string[][]> {
   const args: unknown[] = [yearId];
   const p = (v: unknown) => `$${args.push(v)}`;
-  const act: string[] = [];
-  if (f.kind) act.push(`${KIND} = ${p(f.kind)}`);
-  if (f.ids?.length) act.push(`a.id = ANY(${p(f.ids)}::int[])`);
-  const w = act.map((x) => ' AND ' + x).join('');
+  // I filtri kind/ids valgono solo per attività e presenze e i parametri si aggiungono solo lì; classe solo per allievi.
+  // Relatori e docenti li ignorano (elenco dell'anno intero).
+  const actFilter = () => {
+    const act: string[] = [];
+    if (f.kind) act.push(`${KIND} = ${p(f.kind)}`);
+    if (f.ids?.length) act.push(`a.id = ANY(${p(f.ids)}::int[])`);
+    return act.map((x) => ' AND ' + x).join('');
+  };
   const days = `COALESCE(to_char(d.day, 'DD.MM.YYYY'), 'da definire')`;
   const blocks = `(SELECT string_agg(b.name, ' + ' ORDER BY b.position) FROM session_blocks sb JOIN time_blocks b ON b.id = sb.block_id WHERE sb.session_id = s.id)`;
   const q = async (sql: string) => (await pool.query({ text: sql, values: args, rowMode: 'array' })).rows.map((r: unknown[]) => r.map((v) => String(v ?? '')));
 
   if (what === 'attivita') {
+    const w = actFilter();
     return [['Attività', 'Stato', 'Organizzatore', 'Tipo', 'E-mail', 'Telefono', 'Aula', 'Giorno', 'Blocchi', 'Iscritti', 'Massimo', 'Minimo'],
       ...(await q(`SELECT a.title, a.status, u.first_name || ' ' || u.last_name, ${KIND}, u.login_id, a.contact, r.name, ${days}, ${blocks},
                           (SELECT count(*) FROM enrollments e WHERE e.session_id = s.id), a.max_participants, a.min_participants
@@ -89,6 +94,7 @@ export async function exportRows(pool: Pool, what: What, yearId: number, f: Expo
                    WHERE a.school_year_id = $1${w} ORDER BY a.title, s.repeat_no`))];
   }
   if (what === 'presenze') {
+    const w = actFilter();
     return [['Attività', 'Giorno', 'Blocchi', 'Cognome', 'Nome', 'Classe', 'Presenza'],
       ...(await q(`SELECT a.title, ${days}, ${blocks}, st.last_name, st.first_name, st.class_name,
                           CASE e.present WHEN true THEN 'presente' WHEN false THEN 'assente' ELSE 'non segnata' END
@@ -106,7 +112,7 @@ export async function exportRows(pool: Pool, what: What, yearId: number, f: Expo
                    FROM users u
                    WHERE EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role_code = 'allievo')
                      AND (EXISTS (SELECT 1 FROM enrollments e WHERE e.user_id = u.id AND e.school_year_id = $1)
-                          OR (u.password_hash IS NOT NULL AND (SELECT is_current FROM school_years WHERE id = $1)))${cls}
+                          OR (u.password_hash IS NOT NULL AND (SELECT is_current FROM school_years WHERE id = $1) AND (NOT EXISTS (SELECT 1 FROM student_ids si WHERE si.school_year_id = $1) OR EXISTS (SELECT 1 FROM student_ids si WHERE si.school_year_id = $1 AND lower(si.login_id) = lower(u.login_id)))))${cls}
                    ORDER BY u.last_name, u.first_name`))];
   }
   const people = await listPeople(pool, yearId, what === 'relatori' ? 'relatore' : 'docente');

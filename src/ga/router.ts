@@ -1,5 +1,6 @@
 import { Request, Router } from 'express';
 import { Pool } from 'pg';
+import { readCookie } from '../auth/session';
 import { can, requireCan } from '../auth/permissions';
 import { STATES, cancelEnrollment, enroll, getEnrollState, mySessionIds, openEnrollment, setEnrollState } from './enroll';
 import { listBlocks, listGaDays } from '../admin/settings';
@@ -222,7 +223,16 @@ export function gaRouter(pool: Pool): Router {
   router.get('/attivita', requireCan('ga.view'), async (req, res, next) => {
     try {
       const state = await getEnrollState(pool);
-      const flash = `<p>Iscrizioni: <strong>${STATES[state]}</strong>.</p>`;
+      const esito = readCookie(req, 'esito');
+      let flash = `<p>Iscrizioni: <strong>${STATES[state]}</strong>.</p>`;
+      if (esito) {
+        res.clearCookie('esito');
+        try {
+          flash = `<p role="status"><strong>${esc(JSON.parse(esito).m)}</strong></p>${flash}`;
+        } catch {
+          /* cookie non valido: nessun messaggio */
+        }
+      }
       res.send(await listPage(pool, req.query, await listCtx(req, flash)));
     } catch (e) {
       next(e);
@@ -232,15 +242,15 @@ export function gaRouter(pool: Pool): Router {
   for (const cancel of [false, true]) {
     router.post(cancel ? '/iscrizione/:id/annulla' : '/iscrizione/:id', requireCan('ga.enroll'), async (req, res, next) => {
       try {
-        let flash = `<p><strong>${cancel ? 'Iscrizione annullata.' : 'Iscrizione registrata.'}</strong></p>`;
-        let status = 200;
+        // POST/redirect/GET: l'esito viaggia in un cookie di breve durata, letto e cancellato da GET /attivita.
+        let m = cancel ? 'Iscrizione annullata.' : 'Iscrizione registrata.';
         try {
           await (cancel ? cancelEnrollment : enroll)(pool, req.user!, Number(req.params.id));
         } catch (e) {
-          flash = `<p><strong>${esc((e as Error).message)}</strong></p>`;
-          status = 400;
+          m = (e as Error).message;
         }
-        res.status(status).send(await listPage(pool, {}, await listCtx(req, flash)));
+        res.cookie('esito', JSON.stringify({ m }), { httpOnly: true, sameSite: 'lax', maxAge: 60_000, path: '/' });
+        res.redirect(303, '/attivita');
       } catch (e) {
         next(e);
       }
@@ -292,9 +302,9 @@ export function gaRouter(pool: Pool): Router {
       const rows = await exportRows(pool, what, year.id, { kind: String(q.kind ?? '') || undefined, ids, classe: String(q.classe ?? '') });
       const name = `${what}-${year.name}`;
       if (q.fmt === 'xlsx') {
-        res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').set('Content-Disposition', `attachment; filename="${name}.xlsx"`).send(toXlsx(rows, what));
+        res.attachment(`${name}.xlsx`).send(toXlsx(rows, what));
       } else {
-        res.type('text/csv; charset=utf-8').set('Content-Disposition', `attachment; filename="${name}.csv"`).send(toCsv(rows));
+        res.attachment(`${name}.csv`).type('text/csv; charset=utf-8').send(toCsv(rows));
       }
     } catch (e) {
       next(e);
@@ -402,7 +412,7 @@ export function gaRouter(pool: Pool): Router {
 
   router.get('/approvazione/materiali.csv', requireCan('ga.approve'), async (_req, res, next) => {
     try {
-      res.type('text/csv; charset=utf-8').set('Content-Disposition', 'attachment; filename="materiali-ga.csv"').send(materialsCsv(await materialsList(pool)));
+      res.attachment('materiali-ga.csv').type('text/csv; charset=utf-8').send(materialsCsv(await materialsList(pool)));
     } catch (e) {
       next(e);
     }
