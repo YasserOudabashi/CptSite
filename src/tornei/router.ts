@@ -8,7 +8,9 @@ import { generateCalendar, previewHtml, previewPlan, setSeedNo } from './calenda
 import { loadMatches, roundName, slotLabel } from './matches';
 import { autoAssign, editMatch, gaWarnings } from './schedule';
 import { addEvent, canEnter, loadMatch, removeEvent, resultPage, saveResult } from './results';
-import { matchLine } from './view';
+import { bracketHtml, matchLine, scorersHtml, standingsHtml } from './view';
+import { groupStandings, scorers } from './advance';
+import { createLiveHub, liveScript } from './live';
 import { doc, go, localInput, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
@@ -43,6 +45,7 @@ ${num('match_minutes', 'Durata partita (minuti)', 1)}
 
 export function torneiRouter(pool: Pool): Router {
   const router = Router();
+  const subscribe = createLiveHub(pool);
 
   // Tutte le pagine dei tornei richiedono il login.
   router.use('/tornei', (req, res, next) => (req.user ? next() : res.redirect('/login')));
@@ -94,6 +97,16 @@ export function torneiRouter(pool: Pool): Router {
     return t && (await canSee(pool, req.user, t)) ? t : undefined;
   };
 
+  router.get('/tornei/:id(\\d+)/eventi', async (req, res, next) => {
+    try {
+      const t = await load(req);
+      if (!t) return void res.status(404).send('Torneo non trovato');
+      subscribe(res, t.id).catch(() => res.end());
+    } catch (e) {
+      next(e);
+    }
+  });
+
   router.get('/tornei/:id(\\d+)', async (req, res, next) => {
     try {
       const t = await load(req);
@@ -106,8 +119,10 @@ export function torneiRouter(pool: Pool): Router {
 <p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}</p>
 ${manage ? `<p><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
 <p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>
+<div id="live">
 ${teamsSection(t, await listTeams(pool, t), req.user!, manage)}
-${matches.length ? `<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap, org || m.referee_id === req.user!.id)).join('')}</ul>` : ''}`));
+${matches.length ? `<h2>Classifiche e tabellone</h2>${standingsHtml(await groupStandings(pool, t), t.score_type === 'set')}${bracketHtml(matches, gmap)}${scorersHtml(await scorers(pool, t.id))}<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap, org || m.referee_id === req.user!.id)).join('')}</ul>` : ''}
+</div>${t.status === 'bozza' ? '' : liveScript(t.id)}`));
     } catch (e) {
       next(e);
     }

@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import { esc } from '../ui/layout';
 import { MatchRow } from './matches';
 import { Tournament, User, isOrganizer } from './service';
+import { propagate } from './advance';
 
 export type ResultInput = {
   status?: string;
@@ -101,6 +102,7 @@ export async function saveResult(pool: Pool, user: User, tid: number, matchId: n
       `UPDATE tournament_matches SET status = $2, home_score = $3, away_score = $4, sets = $5, winner_id = $6, forfeit = $7, note = $8 WHERE id = $1`,
       [matchId, status, hs, as, sets, winner, forfeit, note],
     );
+    await propagate(client, t, matchId);
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
