@@ -97,3 +97,25 @@ test('US-029: il Responsabile GA ripropone relatori come contatti dell\'anno', a
   assert.doesNotMatch(after, /Rossi Rita \(rel@x\.ch, relatore\)/);
   assert.match(after, /Rita Rossi<\/td><td>rel@x\.ch/);
 });
+
+test('fix Fase 5: ?anno non valido = 404; contatti solo da anni precedenti; una riga per persona; anni futuri esclusi', async () => {
+  roles = ['resp_ga'];
+  for (const a of ['abc', '999999', '1.5']) assert.equal((await fetch(`${base}/gestione-ga?anno=${a}`)).status, 404, a);
+  const futureYear = (await pool.query(`INSERT INTO school_years (name) VALUES ('2099-2100') RETURNING id`)).rows[0].id;
+  const fut = (await pool.query(`INSERT INTO users (login_id, first_name, last_name) VALUES ('fut@x.ch','Fu','Turo') RETURNING id`)).rows[0].id;
+  await pool.query(`INSERT INTO user_roles VALUES ($1,'docente')`, [fut]);
+  await pool.query(`INSERT INTO activities (school_year_id, title, organizer_id, status, max_participants) VALUES ($1,'Futura',$2,'approvata',5)`, [futureYear, fut]);
+  const multi = (await pool.query(`INSERT INTO users (login_id, first_name, last_name) VALUES ('multi@x.ch','Mu','Lti') RETURNING id`)).rows[0].id;
+  await pool.query(`INSERT INTO user_roles VALUES ($1,'docente'), ($1,'relatore')`, [multi]);
+  await pool.query(`INSERT INTO year_contacts (school_year_id, user_id) VALUES ($1,$2)`, [oldYear, multi]);
+  const page = await (await fetch(`${base}/gestione-ga`)).text();
+  assert.equal(page.split('Lti Mu (multi@x.ch').length - 1, 1);
+  assert.match(page, /Lti Mu \(multi@x\.ch, docente, relatore\)/);
+  assert.doesNotMatch(page, /fut@x\.ch/);
+  const post = await fetch(`${base}/gestione-ga/contatti`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `ids=${fut}&ids=${multi}` });
+  assert.match(await post.text(), /1 contatti riproposti/); // il futuro è ignorato
+  const mine = await (await fetch(`${base}/proponi`)).text();
+  roles = ['docente'];
+  assert.doesNotMatch(await (await fetch(`${base}/proponi`)).text(), /Futura/);
+  void mine;
+});

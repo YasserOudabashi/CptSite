@@ -20,10 +20,10 @@ export function homeRouter(pool: Pool): Router {
 <p>Iscrizioni alle GA: <strong>${STATES[state]}</strong></p>${
         enroll ? `<p>Attività scelte: <strong>${n}</strong> — <a href="/programma">il mio programma</a></p>` : ''
       }
-<p><a href="/attivita">Vedi le attività</a></p>
+${!req.user || can(req.user, 'ga.view') ? '<p><a href="/attivita">Vedi le attività</a></p>' : ''}
 <h2>Come funziona</h2>
 <ul>
-<li>Le iscrizioni si aprono in un momento deciso dai responsabili: chi si iscrive per primo ha la precedenza sui posti, e quando un'attività è piena non si può più scegliere.</li>
+<li>Prima si iscrivono gli organizzatori di attività approvate (fase "Solo organizzatori"); poi le iscrizioni si aprono a tutti e chi arriva prima prende il posto: quando un'attività è piena non si può più scegliere.</li>
 <li>Puoi scegliere una sola attività per ogni blocco orario.</li>
 <li>Alla chiusura delle iscrizioni, chi ha ancora blocchi liberi viene assegnato a caso a un'attività con posti disponibili.</li>
 </ul>

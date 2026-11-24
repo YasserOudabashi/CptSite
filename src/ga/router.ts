@@ -321,7 +321,15 @@ export function gaRouter(pool: Pool): Router {
 
   router.get('/gestione-ga', requireCan('ga.manage'), async (req, res, next) => {
     try {
-      res.send(await managePage(pool, '', Number(req.query.anno) || undefined));
+      let anno: number | undefined;
+      if (req.query.anno !== undefined) {
+        anno = /^\d+$/.test(String(req.query.anno)) ? Number(req.query.anno) : 0;
+        if (!anno || !(await pool.query('SELECT 1 FROM school_years WHERE id = $1', [anno])).rowCount) {
+          res.status(404).send('Anno non trovato.');
+          return;
+        }
+      }
+      res.send(await managePage(pool, '', anno));
     } catch (e) {
       next(e);
     }

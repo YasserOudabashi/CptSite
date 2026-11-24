@@ -208,3 +208,18 @@
 
 ### US-030 (2026-11-24)
 - src/ui/home.ts: date GA (o "da definire"), stato iscrizioni, n. attivita' scelte con link /programma (solo chi puo' iscriversi), link /attivita, tre righe su precedenza e assegnazione casuale; nessun sondaggio/bacheca. Test tests/home.test.ts; 119/119 verdi. Verifica in browser: non fatta.
+
+### Giro di correzioni dalla revisione (2026-11-24)
+Chiuso (commit "Fix revisione: ..."):
+- Export: parametri solo nei rami che li usano (kind/ids per attivita' e presenze, classe per allievi; relatori/docenti li ignorano); res.attachment per i filename.
+- Allievi dell'anno corrente: se l'elenco ID dell'anno e' caricato, assegnazione ed export (allievi senza iscrizioni) usano solo chi e' nell'elenco; senza elenco restano tutti i registrati.
+- FR-10: i blocchi in cui l'utente organizza un'attivita' approvata sono occupati sia in enroll sia in buildPlan.
+- applyAssign blocca le attivita' approvate (FOR UPDATE) prima di buildPlan.
+- enrollment_mail_sent_at e' scritto nella stessa transazione dell'accodamento (sendEnrollmentOpen).
+- cancelEnrollment e undoAssign non toccano iscrizioni con presenza segnata; undoAssign rifiutato se le iscrizioni NON sono 'chiuse' (come l'assegnazione: ho letto cosi' la richiesta, che diceva "chiuse").
+- POST iscrizione/annullamento: 303 su /attivita, esito in cookie 'esito' (60 s) letto e cancellato dal GET.
+- CSRF: middleware in src/app.ts (Origin/Referer = SITE_URL; senza intestazioni rifiutata solo in produzione); SITE_URL obbligatoria in produzione (index.ts).
+- Limiti atomici (src/auth/rateLimit.ts, INSERT prima e conteggio dopo): 5/ora per ID, 300/ora per IP (RATE_LIMIT_IP_PER_HOUR); login per (ID, IP) con migrazione 014. Con richieste parallele possono essere respinte anche piu' del necessario, mai accettate piu' del limite.
+- Pulizia periodica (cleanupExpired) nel worker mail e all'avvio.
+- Fase 5: testo Home su fase "Solo organizzatori", link attivita' solo con ga.view, ?anno non valido = 404, addContacts solo persone degli anni precedenti, una riga per persona (ruoli aggregati), "anni passati" = nome anno < corrente.
+Resta / non fatto: verifica in browser; doppio invio concorrente della mail di apertura non ha un guard nel mail job (il lock sulla riga dell'anno copre solo il cambio di stato); la pagina /attivita/:id e l'archivio non hanno limiti di anno oltre ga.manage.

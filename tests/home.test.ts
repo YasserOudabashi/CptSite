@@ -47,7 +47,7 @@ test('Home: date, stato, attività scelte con link, spiegazione, niente sondaggi
   assert.match(html, /Chiuse|chiuse/);
   assert.match(html, /Attività scelte: <strong>0<\/strong> — <a href="\/programma">/);
   assert.match(html, /href="\/attivita"/);
-  assert.match(html, /precedenza/);
+  assert.match(html, /Solo organizzatori/);
   assert.match(html, /a caso/);
   assert.doesNotMatch(html, /sondagg|bacheca/i);
   await pool.query('INSERT INTO enrollments (user_id, session_id) VALUES ($1,$2)', [uid, sid]);
