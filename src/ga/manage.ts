@@ -1,3 +1,4 @@
+import { previousPeople } from './reuse';
 import { Pool } from 'pg';
 import { esc } from '../ui/layout';
 import { listSchoolYears } from '../admin/settings';
@@ -72,9 +73,10 @@ export async function missingAttendance(pool: Pool, now: Date = new Date()): Pro
 }
 
 // Pagina "Gestione GA": ogni sezione è un blocco di HTML; flash = messaggio dell'ultima azione.
-export async function managePage(pool: Pool, flash = ''): Promise<string> {
+export async function managePage(pool: Pool, flash = '', yearId?: number): Promise<string> {
   const state = await getEnrollState(pool);
-  const year = (await pool.query('SELECT id FROM school_years WHERE is_current')).rows[0].id;
+  const cur = (await pool.query('SELECT id FROM school_years WHERE is_current')).rows[0].id;
+  const year = yearId ?? cur;
   const [missing, activities, relatori, docenti] = await Promise.all([
     missingAttendance(pool),
     listActivities(pool, year),
@@ -89,6 +91,23 @@ export async function managePage(pool: Pool, flash = ''): Promise<string> {
     list.length
       ? table(['Nome', 'Contatto', 'Attività'], list.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.email)}${p.phone ? ` · ${esc(p.phone)}` : ''}</td><td>${p.titles.map(esc).join(', ')}</td></tr>`))
       : '<p>Nessuno.</p>';
+  if (year !== cur) {
+    const name = years.find((y) => y.id === year)?.name;
+    if (!name) throw new Error('Anno non trovato.');
+    return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Archivio ${esc(name)}</title></head><body>
+<h1>Archivio ${esc(name)} (sola lettura)</h1><p><a href="/gestione-ga">Torna all'anno corrente</a></p>
+<h2>Attività</h2>${
+      activities.length
+        ? table(['Attività', 'Stato', 'Blocco', 'Aula', 'Iscritti / max', 'Organizzatore'], activities.map((a) =>
+            `<tr><td><a href="/attivita/${a.id}">${esc(a.title)}</a></td><td>${STATUS[a.status] ?? esc(a.status)}</td><td>${a.sessions.map((x) => esc(x.block) + (x.day ? ` ${x.day}` : '')).join('<br>') || '—'}</td><td>${a.room ? esc(a.room) : 'da definire'}</td><td>${a.sessions.map((x) => `${x.n}/${a.max}`).join('<br>') || '—'}</td><td>${esc(a.organizer)}</td></tr>`))
+        : '<p>Nessuna attività.</p>'
+    }
+<h2>Relatori</h2>${people(relatori)}
+<h2>Docenti</h2>${people(docenti)}
+</body></html>`;
+  }
+  const prev = await previousPeople(pool);
   const sent = (await pool.query('SELECT enrollment_mail_sent_at IS NOT NULL AS sent FROM school_years WHERE is_current')).rows[0].sent;
   return `<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Gestione GA</title></head><body>
@@ -129,6 +148,12 @@ ${
   }
 <h2>Relatori</h2>${people(relatori)}
 <h2>Docenti</h2>${people(docenti)}
+<h2>Riproponi relatori e docenti</h2>${
+    prev.length
+      ? `<form method="post" action="/gestione-ga/contatti">${prev.map((p) => `<p><label><input type="checkbox" name="ids" value="${p.id}"> ${esc(p.name)} (${esc(p.email)}, ${p.role})</label></p>`).join('')}<button>Riproponi come contatti di quest'anno</button></form>`
+      : '<p>Nessuno da riproporre dagli anni precedenti.</p>'
+  }
+<h2>Anni passati (sola lettura)</h2><p>${years.filter((y) => !y.is_current).map((y) => `<a href="/gestione-ga?anno=${y.id}">${esc(y.name)}</a>`).join(' · ') || 'Nessuno.'}</p>
 <h2>Esporta</h2>
 <form method="get" action="/gestione-ga/export"><p>
 <select name="what" aria-label="Cosa">${[['attivita', 'Attività'], ['allievi', 'Allievi (classe e programma)'], ['relatori', 'Relatori'], ['docenti', 'Docenti'], ['presenze', 'Presenze']]

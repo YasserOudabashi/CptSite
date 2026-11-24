@@ -10,6 +10,7 @@ import { Mine, listMine, updateMine } from './mine';
 import { WHAT, What, exportRows, toCsv, toXlsx } from './exports';
 import { activityPage, setAttendance } from './attendance';
 import { applyAssign, buildPlan, undoAssign } from './assign';
+import { addContacts, prefillFrom, previousMine } from './reuse';
 import { managePage } from './manage';
 import { programPage } from './program';
 import { createSeatsHub } from './seats';
@@ -93,10 +94,15 @@ async function proposePage(pool: Pool, user: { id: number }, v: Record<string, u
   const blockOpts = (k: string) =>
     `<option value="">—</option>` + blocks.filter((b) => b.kind === 'blocco').map((b) => opt(k, b.id, blockLabel(b))).join('');
   const who = me.rows[0];
+  const prevMine = await previousMine(pool, user.id);
   return `<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Proponi un'attività</title></head><body>
 <h1>Proponi un'attività</h1>
-${flash}
+${flash}${
+    prevMine.length
+      ? `<h2>Le mie attività degli anni scorsi</h2><ul>${prevMine.map((a) => `<li>${esc(a.title)} (${esc(a.year)}) <a href="/proponi?da=${a.id}">Riproponi</a></li>`).join('')}</ul>`
+      : ''
+  }
 <form method="post" action="/proponi">
 <p><label>Organizzatore <input value="${esc(`${who.first_name} ${who.last_name} (${who.login_id})`)}" readonly size="40"></label></p>
 <p><label>Nome dell'attività <input name="title" value="${g('title')}" required maxlength="120"></label></p>
@@ -303,9 +309,9 @@ export function gaRouter(pool: Pool): Router {
     }
   });
 
-  router.get('/gestione-ga', requireCan('ga.manage'), async (_req, res, next) => {
+  router.get('/gestione-ga', requireCan('ga.manage'), async (req, res, next) => {
     try {
-      res.send(await managePage(pool));
+      res.send(await managePage(pool, '', Number(req.query.anno) || undefined));
     } catch (e) {
       next(e);
     }
@@ -330,6 +336,11 @@ export function gaRouter(pool: Pool): Router {
         next(e);
       }
     });
+
+  manageAction('/gestione-ga/contatti', async (req) => {
+    const ids = [req.body?.ids ?? []].flat().map(Number).filter(Number.isInteger);
+    return `${await addContacts(pool, ids)} contatti riproposti per quest'anno.`;
+  });
 
   manageAction('/gestione-ga/stato', async (req) => {
     await setEnrollState(pool, String(req.body?.state ?? ''));
@@ -360,7 +371,8 @@ export function gaRouter(pool: Pool): Router {
 
   router.get('/proponi', requireCan('ga.propose'), async (req, res, next) => {
     try {
-      res.send(await proposePage(pool, req.user!));
+      const da = Number(req.query.da);
+      res.send(await proposePage(pool, req.user!, (da && (await prefillFrom(pool, req.user!.id, da))) || {}));
     } catch (e) {
       next(e);
     }
