@@ -5,7 +5,10 @@ import { esc } from '../ui/layout';
 import { CRITERIA, FORMATS, Tournament, addField, addPerson, approvedActivities, canCreate, canManage, canSee, createTournament, getTournament, hasMatches, listFields, people, removeField, removePerson, setStatus, updateTournament } from './service';
 import { addMember, addTeamManual, approveTeam, confirmMember, joinTournament, listTeams, removeMember, teamsSection, withdrawTeam } from './teams';
 import { generateCalendar, previewHtml, previewPlan, setSeedNo } from './calendar';
-import { doc, go, takeFlash } from './ui';
+import { loadMatches, roundName, slotLabel } from './matches';
+import { autoAssign, editMatch, gaWarnings } from './schedule';
+import { matchLine } from './view';
+import { doc, go, localInput, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
 const sel = (v: unknown, o: unknown) => (String(v) === String(o) ? ' selected' : '');
@@ -95,11 +98,14 @@ export function torneiRouter(pool: Pool): Router {
       const t = await load(req);
       if (!t) return void res.status(404).send('Torneo non trovato');
       const manage = await canManage(pool, req.user, t.id);
+      const matches = await loadMatches(pool, t.id);
+      const gmap = new Map((await pool.query<{ id: number; name: string }>('SELECT id, name FROM tournament_groups WHERE tournament_id = $1', [t.id])).rows.map((g) => [g.id, g.name]));
       res.send(doc(t.name, `<h1>${esc(t.name)}</h1>${takeFlash(req, res)}
 <p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}</p>
 ${manage ? `<p><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
 <p>${esc(t.description)}</p><h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>
-${teamsSection(t, await listTeams(pool, t), req.user!, manage)}`));
+${teamsSection(t, await listTeams(pool, t), req.user!, manage)}
+${matches.length ? `<h2>Partite</h2><ul>${matches.map((m) => matchLine(m, matches, gmap)).join('')}</ul>` : ''}`));
     } catch (e) {
       next(e);
     }
@@ -123,7 +129,7 @@ ${teamsSection(t, await listTeams(pool, t), req.user!, manage)}`));
         `<form method="post" action="/tornei/${t.id}/persone/${kind}"><p><label>${label} (nome o ID) <input name="q" required></label> <button>Aggiungi</button></p></form>`;
       const next_ = t.status === 'bozza' ? 'iscrizioni' : t.status === 'iscrizioni' && !locked ? 'bozza' : t.status === 'in corso' ? 'concluso' : '';
       res.send(doc(`Gestione ${t.name}`, `<h1>Gestione: ${esc(t.name)}</h1>${takeFlash(req, res)}
-<p><a href="/tornei/${t.id}">Pagina del torneo</a>${['iscrizioni', 'in corso'].includes(t.status) ? ` · <a href="/tornei/${t.id}/calendario">Calendario: anteprima e generazione</a>` : ''} · stato: <strong>${t.status}</strong>${
+<p><a href="/tornei/${t.id}">Pagina del torneo</a>${['iscrizioni', 'in corso'].includes(t.status) ? ` · <a href="/tornei/${t.id}/calendario">Calendario: anteprima e generazione</a>` : ''}${t.status === 'in corso' ? ` · <a href="/tornei/${t.id}/programma">Campi e orari</a>` : ''} · stato: <strong>${t.status}</strong>${
         next_ ? ` <form method="post" action="/tornei/${t.id}/stato" style="display:inline"><input type="hidden" name="to" value="${next_}"><button>Passa a "${next_}"</button></form>` : ''
       }</p>
 ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
@@ -239,6 +245,55 @@ ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
       next(e);
     }
   });
+
+  // --- campi, orari e arbitri (solo chi gestisce)
+  router.get('/tornei/:id(\\d+)/programma', async (req, res, next) => {
+    try {
+      const t = await managed(req);
+      if (!t) return void res.status(403).send('Non autorizzato');
+      const [matches, fields, refs, warns, groups] = await Promise.all([
+        loadMatches(pool, t.id),
+        listFields(pool, t.id),
+        people(pool, t.id, 'referees'),
+        gaWarnings(pool, t.id),
+        pool.query<{ id: number; name: string }>('SELECT id, name FROM tournament_groups WHERE tournament_id = $1', [t.id]),
+      ]);
+      const gmap = new Map(groups.rows.map((g) => [g.id, g.name]));
+      const opt = (rows: { id: number; name: string }[], cur: number | null) => `<option value="">—</option>${rows.map((r) => `<option value="${r.id}"${r.id === cur ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}`;
+      const rows = matches
+        .map((m) => `<li><strong>${esc(slotLabel(m.home, m.home_src, gmap))} – ${esc(slotLabel(m.away, m.away_src, gmap))}</strong> (${esc(m.group_name ?? roundName(matches, m))}) ${m.status === 'finita' ? '(finita)' : ''}
+<form method="post" action="/tornei/${t.id}/partite/${m.id}/orario">
+<select name="field" aria-label="Campo">${opt(fields, m.field_id)}</select>
+<input type="datetime-local" name="start" value="${localInput(m.starts_at)}" aria-label="Data e ora">
+<select name="referee" aria-label="Arbitro">${opt(refs, m.referee_id)}</select>
+<input name="reason" placeholder="Motivo del rinvio" value="${esc(m.postponed_reason ?? '')}"> <button>Salva</button></form>
+${(warns.get(m.id) ?? []).map((w) => `<br><em>Attenzione: ${esc(w)}</em>`).join('')}</li>`)
+        .join('');
+      res.send(doc(`Programma ${t.name}`, `<h1>Campi e orari: ${esc(t.name)}</h1>${takeFlash(req, res)}<p><a href="/tornei/${t.id}/gestione">Gestione</a></p>
+<form method="post" action="/tornei/${t.id}/programma/auto"><p>Assegnazione automatica da <input type="datetime-local" name="start" required> pausa tra partite (minuti) <input type="number" name="pause" value="10" min="0" style="width:4rem"> <button>Assegna campi, orari e arbitri</button></p></form>
+<p><small>Durata partita: ${t.match_minutes} minuti. Il sito blocca due partite sullo stesso campo, o con la stessa squadra o lo stesso arbitro, in orari sovrapposti.</small></p>
+<ul>${rows || '<li>Nessuna partita: genera prima il calendario.</li>'}</ul>`));
+    } catch (e) {
+      next(e);
+    }
+  });
+  const prog = (path: string, fn: (req: Request, id: number) => Promise<string>) =>
+    router.post(`/tornei/:id(\\d+)/${path}`, async (req, res, next) => {
+      try {
+        const id = Number(req.params.id);
+        let m: string;
+        try {
+          m = await fn(req, id);
+        } catch (e) {
+          m = (e as Error).message;
+        }
+        go(res, `/tornei/${id}/programma`, m);
+      } catch (e) {
+        next(e);
+      }
+    });
+  prog('programma/auto', async (req, id) => `Assegnate ${await autoAssign(pool, req.user!, id, String(req.body.start ?? ''), Number(req.body.pause))} partite.`);
+  prog('partite/:mid(\\d+)/orario', (req, id) => editMatch(pool, req.user!, id, Number(req.params.mid), req.body));
 
   return router;
 }
