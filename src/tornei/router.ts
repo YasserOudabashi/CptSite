@@ -12,6 +12,8 @@ import { bracketHtml, matchLine, scorersHtml, standingsHtml } from './view';
 import { groupStandings, scorers } from './advance';
 import { createLiveHub, liveScript } from './live';
 import { myMatches, myMatchesHtml } from './mine';
+import { WHAT, What, duplicateTournament, exportRows } from './exports';
+import { toCsv, toXlsx } from '../ga/exports';
 import { doc, go, localInput, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
@@ -63,7 +65,7 @@ export function torneiRouter(pool: Pool): Router {
       const items = visible
         .map((t) => `<li><a href="/tornei/${t.id}">${esc(t.name)}</a> · ${esc(t.sport)} · ${t.status} · ${t.teams}/${t.max_teams} ${t.mode === 'singoli' ? 'iscritti' : 'squadre'} (${Math.max(0, t.max_teams - t.teams)} posti rimasti)</li>`)
         .join('');
-      res.send(doc('Tornei', `<h1>Tornei</h1>${takeFlash(req, res)}${(await canCreate(pool, user)) ? '<p><a href="/tornei/nuovo">Crea un torneo</a></p>' : ''}<ul>${items || '<li>Nessun torneo.</li>'}</ul>`));
+      res.send(doc('Tornei', `<h1>Tornei</h1>${takeFlash(req, res)}${(await canCreate(pool, user)) ? '<p><a href="/tornei/nuovo">Crea un torneo</a></p>' : ''}<ul>${items || '<li>Nessun torneo.</li>'}</ul><p><a href="/tornei/archivio">Archivio degli anni scorsi</a></p>`));
     } catch (e) {
       next(e);
     }
@@ -108,6 +110,57 @@ export function torneiRouter(pool: Pool): Router {
     }
   });
 
+  // Archivio: tornei degli anni precedenti, per anno scolastico (le bozze solo per chi le gestisce).
+  router.get('/tornei/archivio', async (req, res, next) => {
+    try {
+      const { rows } = await pool.query<Tournament>(
+        `SELECT t.*, y.name AS year_name FROM tournaments t JOIN school_years y ON y.id = t.school_year_id WHERE NOT y.is_current ORDER BY y.name DESC, t.name`,
+      );
+      const byYear = new Map<string, string[]>();
+      for (const t of rows) {
+        if (!(await canSee(pool, req.user, t))) continue;
+        const dup = (await canManage(pool, req.user, t.id)) ? ` <form method="post" action="/tornei/${t.id}/duplica" style="display:inline"><button>Duplica nell'anno corrente</button></form>` : '';
+        byYear.set(t.year_name, [...(byYear.get(t.year_name) ?? []), `<li><a href="/tornei/${t.id}">${esc(t.name)}</a> · ${esc(t.sport)} · ${t.status}${dup}</li>`]);
+      }
+      const body = [...byYear].map(([y, items]) => `<h2>Anno scolastico ${esc(y)}</h2><ul>${items.join('')}</ul>`).join('');
+      res.send(doc('Archivio tornei', `<h1>Archivio tornei</h1>${takeFlash(req, res)}<p><a href="/tornei">Tornei di quest'anno</a></p>${body || '<p>Nessun torneo negli anni precedenti.</p>'}`));
+    } catch (e) {
+      next(e);
+    }
+  });
+  router.post('/tornei/:id(\\d+)/duplica', async (req, res, next) => {
+    try {
+      let id: number;
+      try {
+        id = await duplicateTournament(pool, req.user!, Number(req.params.id));
+      } catch (e) {
+        return go(res, '/tornei/archivio', (e as Error).message);
+      }
+      go(res, `/tornei/${id}/gestione`, 'Torneo duplicato (in bozza, senza squadre né partite).');
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Esportazioni (Responsabile tornei e organizzatori): CSV o XLSX di squadre, calendario, risultati, classifiche, marcatori.
+  router.get('/tornei/:id(\\d+)/export', async (req, res, next) => {
+    try {
+      const t = await managed(req);
+      if (!t) return void res.status(403).send('Non autorizzato');
+      const what = String(req.query.what) as What;
+      if (!WHAT.includes(what)) return void res.status(400).send('Esportazione non valida');
+      const rows = await exportRows(pool, t, what);
+      const base = `${t.name}-${what}`.replace(/[^A-Za-z0-9_-]+/g, '_');
+      if (req.query.fmt === 'xlsx') {
+        res.attachment(`${base}.xlsx`).type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(toXlsx(rows, what));
+      } else {
+        res.attachment(`${base}.csv`).type('text/csv; charset=utf-8').send(toCsv(rows));
+      }
+    } catch (e) {
+      next(e);
+    }
+  });
+
   // "Le mie partite": prossime partite come giocatore o come arbitro.
   router.get('/tornei/mie', async (req, res, next) => {
     try {
@@ -144,14 +197,15 @@ export function torneiRouter(pool: Pool): Router {
       const calendar = all.length
         ? `<h2>Classifiche e tabellone</h2>${standingsHtml(await groupStandings(pool, t), t.score_type === 'set')}${bracketHtml(all, gmap)}${scorersHtml(await scorers(pool, t.id))}<h2>Partite</h2><ul>${shown.map((m) => matchLine(m, all, gmap, !screen && (org || m.referee_id === req.user!.id))).join('') || '<li>Nessuna partita con questi filtri.</li>'}</ul>`
         : '';
-      const head = screen ? '<style>html body>header{display:none}html body>main{max-width:none;font-size:1.25rem}</style>' : '<style>@media print{body>header,nav,form,.noprint{display:none!important}}</style>';
+      const head = screen ? '<style>html body>header{display:none}html body>main{max-width:none;font-size:1.25rem}</style>' : '<style>@media print{body>header,nav,form,button,.noprint{display:none!important}.bracket{overflow:visible!important;flex-wrap:wrap}.bracket>div,li,tr{break-inside:avoid}body{font-size:11pt}}</style>';
       res.send(doc(t.name, `<h1>${esc(t.name)}</h1>${takeFlash(req, res)}
 <p>${esc(t.sport)} · ${FORMATS[t.format]} · stato: <strong>${t.status}</strong> · anno ${esc(t.year_name)}${screen ? '' : ` · <a href="/tornei/${t.id}?schermo=1">Schermo intero</a>`}</p>
+${screen ? '' : '<p class="noprint"><button onclick="window.print()">Stampa calendario e tabellone</button></p>'}
 ${manage ? `<p class="noprint"><a href="/tornei/${t.id}/gestione">Gestisci il torneo</a></p>` : ''}
 <p>${esc(t.description)}</p>${screen ? '' : `<h2>Regolamento</h2><p style="white-space:pre-wrap">${esc(t.rules)}</p>`}
 ${filters}
 <div id="live">
-${screen ? '' : teamsSection(t, teams, req.user!, manage || org)}
+${screen ? '' : `<div class="noprint">${teamsSection(t, teams, req.user!, manage || org)}</div>`}
 ${calendar}
 </div>${t.status === 'bozza' ? '' : liveScript(t.id)}`, head));
     } catch (e) {
@@ -180,6 +234,7 @@ ${calendar}
 <p><a href="/tornei/${t.id}">Pagina del torneo</a>${['iscrizioni', 'in corso'].includes(t.status) ? ` · <a href="/tornei/${t.id}/calendario">Calendario: anteprima e generazione</a>` : ''}${t.status === 'in corso' ? ` · <a href="/tornei/${t.id}/programma">Campi e orari</a>` : ''} · stato: <strong>${t.status}</strong>${
         next_ ? ` <form method="post" action="/tornei/${t.id}/stato" style="display:inline"><input type="hidden" name="to" value="${next_}"><button>Passa a "${next_}"</button></form>` : ''
       }</p>
+<p>Esporta: ${['squadre', 'calendario', 'risultati', 'classifiche', 'marcatori'].map((w) => `${w} (<a href="/tornei/${t.id}/export?what=${w}&fmt=csv">CSV</a> · <a href="/tornei/${t.id}/export?what=${w}&fmt=xlsx">XLSX</a>)`).join(' · ')}</p>
 ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
 <h2>Organizzatori</h2><ul>${orgs.map((p) => person('organizers', p)).join('')}</ul>${add('organizers', 'Aggiungi organizzatore')}
 <h2>Arbitri</h2><ul>${refs.map((p) => person('referees', p)).join('') || '<li>Nessuno</li>'}</ul>${add('referees', 'Aggiungi arbitro')}
