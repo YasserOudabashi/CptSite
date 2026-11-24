@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { Tournament, User, canManage, getTournament } from './service';
 
 type SM = { id: number; stage: string; round: number; pos: number; home: number | null; away: number | null };
@@ -59,7 +59,7 @@ export function findConflict(others: Slot[], c: Slot, minutes: number, names: (i
 const LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const SQL_AT = `($1::timestamp AT TIME ZONE 'Europe/Zurich')`;
 
-async function slotsOf(pool: Pool, tid: number): Promise<Slot[]> {
+async function slotsOf(pool: Pool | PoolClient, tid: number): Promise<Slot[]> {
   return (
     await pool.query<Slot>(
       `SELECT id, field_id AS field, (extract(epoch from starts_at) * 1000)::float8 AS start, home_id AS home, away_id AS away, referee_id AS referee
@@ -84,18 +84,32 @@ export async function autoAssign(pool: Pool, user: User, tid: number, start: str
   const fields = (await pool.query<{ id: number }>('SELECT id FROM tournament_fields WHERE tournament_id = $1 ORDER BY id', [tid])).rows;
   if (!fields.length) throw new Error('Aggiungi almeno un campo nella gestione del torneo.');
   const refs = (await pool.query<{ user_id: number }>('SELECT user_id FROM tournament_referees WHERE tournament_id = $1 ORDER BY user_id', [tid])).rows.map((r) => r.user_id);
-  const { rows } = await pool.query<SM>(
-    `SELECT id, stage, round, pos, home_id AS home, away_id AS away FROM tournament_matches WHERE tournament_id = $1 AND status = 'da giocare'`,
-    [tid],
-  );
-  const plan = autoSchedule(rows, fields.length, refs, t.match_minutes, pause);
   const client = await pool.connect();
+  let plan: ReturnType<typeof autoSchedule> = [];
   try {
     await client.query('BEGIN');
+    await client.query('SELECT 1 FROM tournaments WHERE id = $1 FOR UPDATE', [tid]);
+    // Solo le partite non ancora programmate: orari, rinvii e partite giocate non si toccano.
+    const { rows } = await client.query<SM>(
+      `SELECT id, stage, round, pos, home_id AS home, away_id AS away FROM tournament_matches WHERE tournament_id = $1 AND status = 'da giocare' AND starts_at IS NULL`,
+      [tid],
+    );
+    plan = autoSchedule(rows, fields.length, refs, t.match_minutes, pause);
+    // Campi, squadre e arbitri delle partite già programmate (anche in corso o finite) restano occupati: si sposta il blocco in avanti finché non c'è conflitto.
+    const existing = (await slotsOf(client, tid)).filter((s) => s.start != null);
+    const startMs = (await client.query<{ ms: number }>(`SELECT (extract(epoch from ${SQL_AT}) * 1000)::float8 AS ms`, [start])).rows[0].ms;
+    const step = t.match_minutes + pause;
+    let shift = 0;
+    const clash = (sh: number) =>
+      plan.some((p) => {
+        const m = rows.find((r) => r.id === p.id)!;
+        return findConflict(existing, { id: p.id, field: fields[p.field].id, start: startMs + (p.offset + sh * step) * 60000, home: m.home, away: m.away, referee: p.referee }, t.match_minutes) !== null;
+      });
+    while (existing.length && plan.length && clash(shift) && shift < 2000) shift++;
     for (const p of plan) {
       await client.query(
-        `UPDATE tournament_matches SET field_id = $2, referee_id = $3, starts_at = (($4::timestamp + $5 * interval '1 minute') AT TIME ZONE 'Europe/Zurich'), postponed_reason = NULL WHERE id = $1`,
-        [p.id, fields[p.field].id, p.referee, start, p.offset],
+        `UPDATE tournament_matches SET field_id = $2, referee_id = $3, starts_at = (($4::timestamp + $5 * interval '1 minute') AT TIME ZONE 'Europe/Zurich') WHERE id = $1`,
+        [p.id, fields[p.field].id, p.referee, start, p.offset + shift * step],
       );
     }
     await client.query('COMMIT');
@@ -109,31 +123,48 @@ export async function autoAssign(pool: Pool, user: User, tid: number, start: str
 }
 
 // Modifica manuale di campo, orario e arbitro; un nuovo orario su una partita già programmata richiede il motivo (rinvio).
-export async function editMatch(pool: Pool, user: User, tid: number, matchId: number, b: { field?: string; start?: string; referee?: string; reason?: string }): Promise<string> {
+type EditBody = { field?: string; start?: string; referee?: string; reason?: string };
+// Transazione con il torneo bloccato: due modifiche simultanee non possono creare conflitti di campo, squadra o arbitro.
+export async function editMatch(pool: Pool, user: User, tid: number, matchId: number, b: EditBody): Promise<string> {
   const t = await guard(pool, user, tid);
-  const m = (await pool.query<{ id: number; home_id: number | null; away_id: number | null; status: string; starts_at: Date | null }>('SELECT id, home_id, away_id, status, starts_at FROM tournament_matches WHERE id = $1 AND tournament_id = $2', [matchId, tid])).rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT 1 FROM tournaments WHERE id = $1 FOR UPDATE', [tid]);
+    await editMatchTx(client, t, tid, matchId, b);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+  const warn = (await gaWarnings(pool, tid)).get(matchId);
+  return warn ? `Salvato. Attenzione: ${warn.join('; ')}` : 'Salvato.';
+}
+
+async function editMatchTx(client: PoolClient, t: Tournament, tid: number, matchId: number, b: EditBody): Promise<void> {
+  const m = (await client.query<{ id: number; home_id: number | null; away_id: number | null; status: string; starts_at: Date | null }>('SELECT id, home_id, away_id, status, starts_at FROM tournament_matches WHERE id = $1 AND tournament_id = $2', [matchId, tid])).rows[0];
   if (!m) throw new Error('Partita non trovata.');
   if (m.status === 'finita') throw new Error('La partita è finita: non si cambia più l\'orario.');
   const field = Number(b.field) || null;
   const referee = Number(b.referee) || null;
-  if (field && !(await pool.query('SELECT 1 FROM tournament_fields WHERE id = $1 AND tournament_id = $2', [field, tid])).rowCount) throw new Error('Campo non valido.');
-  if (referee && !(await pool.query('SELECT 1 FROM tournament_referees WHERE user_id = $1 AND tournament_id = $2', [referee, tid])).rowCount) throw new Error('L\'arbitro non è assegnato a questo torneo.');
+  if (field && !(await client.query('SELECT 1 FROM tournament_fields WHERE id = $1 AND tournament_id = $2', [field, tid])).rowCount) throw new Error('Campo non valido.');
+  if (referee && !(await client.query('SELECT 1 FROM tournament_referees WHERE user_id = $1 AND tournament_id = $2', [referee, tid])).rowCount) throw new Error('L\'arbitro non è assegnato a questo torneo.');
   const local = (b.start ?? '').trim();
   if (local && !LOCAL.test(local)) throw new Error('Data e ora non valide.');
-  const start = local ? (await pool.query<{ ms: number }>(`SELECT (extract(epoch from ${SQL_AT}) * 1000)::float8 AS ms`, [local])).rows[0].ms : null;
+  const start = local ? (await client.query<{ ms: number }>(`SELECT (extract(epoch from ${SQL_AT}) * 1000)::float8 AS ms`, [local])).rows[0].ms : null;
   const cand: Slot = { id: matchId, field, start, home: m.home_id, away: m.away_id, referee };
-  const names = new Map((await pool.query<{ id: number; name: string }>('SELECT id, name FROM tournament_teams WHERE tournament_id = $1', [tid])).rows.map((r) => [r.id, r.name]));
-  const bad = findConflict(await slotsOf(pool, tid), cand, t.match_minutes, (id) => names.get(id) ?? '?');
+  const names = new Map((await client.query<{ id: number; name: string }>('SELECT id, name FROM tournament_teams WHERE tournament_id = $1', [tid])).rows.map((r) => [r.id, r.name]));
+  const bad = findConflict(await slotsOf(client, tid), cand, t.match_minutes, (id) => names.get(id) ?? '?');
   if (bad) throw new Error(bad);
   const moved = m.starts_at != null && start != null && m.starts_at.getTime() !== start;
   const reason = (b.reason ?? '').trim();
   if (moved && !reason) throw new Error('La partita era già programmata: scrivi il motivo del rinvio.');
-  await pool.query(
+  await client.query(
     `UPDATE tournament_matches SET field_id = $2, referee_id = $3, starts_at = ($4::timestamp AT TIME ZONE 'Europe/Zurich'), postponed_reason = $5 WHERE id = $1`,
     [matchId, field, referee, local || null, moved ? reason : null],
   );
-  const warn = (await gaWarnings(pool, tid)).get(matchId);
-  return warn ? `Salvato. Attenzione: ${warn.join('; ')}` : 'Salvato.';
 }
 
 // Avviso (non blocco): giocatori della partita con un'attività GA nello stesso orario.

@@ -115,7 +115,8 @@ export function parseTournament(b: Body) {
     .map((s) => s.trim())
     .filter(Boolean);
   if (tiebreaks.some((c) => !(c in CRITERIA)) || new Set(tiebreaks).size !== tiebreaks.length) throw new Error('Criteri di spareggio non validi.');
-  if (!tiebreaks.includes('sorteggio')) tiebreaks.push('sorteggio');
+  // "punti" è sempre il primo criterio; "sorteggio" sempre l'ultimo.
+  const order = ['punti', ...tiebreaks.filter((c) => c !== 'punti' && c !== 'sorteggio'), 'sorteggio'];
   return {
     name,
     sport,
@@ -133,8 +134,8 @@ export function parseTournament(b: Body) {
     pts_win: int(b, 'pts_win', 'Punti per vittoria', 0, 20),
     pts_draw: int(b, 'pts_draw', 'Punti per pareggio', 0, 20),
     pts_loss: int(b, 'pts_loss', 'Punti per sconfitta', 0, 20),
-    forfeit_score: int(b, 'forfeit_score', 'Punteggio del forfait', 0, 99),
-    tiebreaks: tiebreaks.join(','),
+    forfeit_score: int(b, 'forfeit_score', 'Punteggio del forfait', 1, 99),
+    tiebreaks: order.join(','),
     match_minutes: int(b, 'match_minutes', 'Durata partita', 1, 600),
     max_teams: int(b, 'max_teams', 'Massimo squadre', 2, 128),
   };
@@ -186,6 +187,17 @@ export async function updateTournament(pool: Pool, user: User, id: number, b: Bo
     return;
   }
   const v = parseTournament(b);
+  if (t.status === 'iscrizioni') {
+    // Con le iscrizioni aperte non si tolgono posti a chi è già iscritto.
+    const n = (await pool.query<{ teams: number; players: number }>(
+      `SELECT (SELECT count(*)::int FROM tournament_teams WHERE tournament_id = $1) AS teams,
+              COALESCE((SELECT max(c)::int FROM (SELECT count(*) AS c FROM tournament_members WHERE tournament_id = $1 GROUP BY team_id) x), 0) AS players`,
+      [id],
+    )).rows[0];
+    if (v.max_teams < n.teams) throw new Error(`Ci sono già ${n.teams} iscritti: il massimo non può essere ${v.max_teams}.`);
+    if (v.mode !== t.mode && n.teams > 0) throw new Error('Con squadre già iscritte non si cambia modalità (squadre/singoli).');
+    if (v.team_max < n.players) throw new Error(`Una squadra ha già ${n.players} giocatori: il massimo non può essere ${v.team_max}.`);
+  }
   const keys = ['name', 'description', 'rules', 'sport', ...SETTINGS] as const;
   await pool.query(`UPDATE tournaments SET ${keys.map((k, i) => `${k} = $${i + 2}`).join(',')} WHERE id = $1`, [id, ...keys.map((k) => v[k])]);
 }
@@ -231,6 +243,8 @@ export async function removePerson(pool: Pool, user: User, tid: number, kind: 'o
     throw new Error('Il torneo deve avere almeno un organizzatore.');
   }
   await pool.query(`DELETE FROM tournament_${kind} WHERE tournament_id = $1 AND user_id = $2`, [tid, userId]);
+  // un arbitro tolto non resta assegnato alle partite
+  if (kind === 'referees') await pool.query('UPDATE tournament_matches SET referee_id = NULL WHERE tournament_id = $1 AND referee_id = $2', [tid, userId]);
 }
 
 export async function people(pool: Pool, tid: number, kind: 'organizers' | 'referees') {

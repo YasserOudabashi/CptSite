@@ -113,5 +113,5 @@ export async function openEnrollment(pool: Pool, userId: number, resend: boolean
     client.release();
   }
   // Dopo il commit: sendEnrollmentOpen segna enrollment_mail_sent_at solo quando l'accodamento è riuscito; il worker riprova gli invii falliti.
-  return (await sendEnrollmentOpen(pool, { createdBy: userId })).recipients;
+  return (await sendEnrollmentOpen(pool, { createdBy: userId, onlyOnce: !resend })).recipients;
 }

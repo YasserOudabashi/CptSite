@@ -10,6 +10,7 @@ export interface MyMatch {
   status: string;
   field: string | null;
   referee: string | null;
+  postponed_reason: string | null;
   role: 'arbitro' | 'giocatore';
   home: string | null;
   away: string | null;
@@ -20,7 +21,7 @@ export interface MyMatch {
 export async function myMatches(pool: Pool, userId: number, limit = 50): Promise<MyMatch[]> {
   return (
     await pool.query<MyMatch>(
-      `SELECT m.id, m.tournament_id, t.name AS tournament, m.starts_at, m.status, f.name AS field, r.first_name || ' ' || r.last_name AS referee,
+      `SELECT m.id, m.tournament_id, t.name AS tournament, m.starts_at, m.status, m.postponed_reason, f.name AS field, r.first_name || ' ' || r.last_name AS referee,
               CASE WHEN m.referee_id = $1 THEN 'arbitro' ELSE 'giocatore' END AS role, h.name AS home, a.name AS away,
               CASE WHEN tm.team_id = m.home_id THEN a.name ELSE h.name END AS opponent
        FROM tournament_matches m
@@ -40,7 +41,7 @@ export function myMatchesHtml(rows: MyMatch[]): string {
     .map(
       (m) => `<li${m.status === 'in corso' ? ' style="background:#ffd54f55;border-radius:.25rem;padding:.1rem .3rem"' : ''}><strong>${fmtWhen(m.starts_at)}</strong> · <a href="/tornei/${m.tournament_id}">${esc(m.tournament)}</a> ·
 ${m.role === 'arbitro' ? `arbitri ${esc(m.home ?? 'da definire')} – ${esc(m.away ?? 'da definire')}` : `contro ${esc(m.opponent ?? 'da definire')}`}
-${m.field ? `· campo: ${esc(m.field)}` : '· campo da definire'}${m.role === 'giocatore' && m.referee ? ` · arbitro: ${esc(m.referee)}` : ''}${m.status === 'in corso' ? ' · <strong>IN CORSO</strong>' : ''}</li>`,
+${m.field ? `· campo: ${esc(m.field)}` : '· campo da definire'}${m.role === 'giocatore' && m.referee ? ` · arbitro: ${esc(m.referee)}` : ''}${m.status === 'in corso' ? ' · <strong>IN CORSO</strong>' : ''}${m.postponed_reason ? ` · <em>rinviata: ${esc(m.postponed_reason)}</em>` : ''}</li>`,
     )
     .join('')}</ul>`;
 }

@@ -58,6 +58,7 @@ export async function saveResult(pool: Pool, user: User, tid: number, matchId: n
     if (t.status !== 'in corso') throw new Error('Il torneo non è in corso.');
     const status = String(b.status ?? '');
     if (!['da giocare', 'in corso', 'finita', 'annullata'].includes(status)) throw new Error('Stato non valido.');
+    if (status === 'annullata' && m.stage === 'eliminazione') throw new Error('Nell\'eliminazione diretta una partita non si annulla (il tabellone si bloccherebbe): usa il forfait.');
     if ((status === 'in corso' || status === 'finita') && (!m.home_id || !m.away_id)) throw new Error('Le due squadre non sono ancora note.');
     const ko = m.stage === 'eliminazione';
     let hs: number | null = null;
@@ -69,8 +70,10 @@ export async function saveResult(pool: Pool, user: User, tid: number, matchId: n
     if (status === 'finita' && (b.forfeit === 'home' || b.forfeit === 'away')) {
       forfeit = true;
       winner = side(b.forfeit);
-      hs = b.forfeit === 'home' ? t.forfeit_score : 0;
-      as = b.forfeit === 'away' ? t.forfeit_score : 0;
+      // a set: la vittoria a tavolino vale i set necessari a vincere; altrimenti il punteggio configurato
+      const fs = t.score_type === 'set' ? Math.ceil(t.best_of / 2) : t.forfeit_score;
+      hs = b.forfeit === 'home' ? fs : 0;
+      as = b.forfeit === 'away' ? fs : 0;
     } else if (status === 'in corso' || status === 'finita') {
       const done = status === 'finita';
       if (t.score_type === 'set') {

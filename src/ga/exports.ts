@@ -9,7 +9,8 @@ export type ExportFilters = { kind?: string; ids?: number[]; classe?: string };
 
 // CSV per Excel: BOM UTF-8, ';' come separatore, valori che iniziano con = + - @ neutralizzati con un apice (niente formule).
 export function toCsv(rows: string[][]): string {
-  const q = (s: string) => `"${s.replace(/^(\s*[=+\-@]|[\t\r])/, "'$1").replace(/"/g, '""')}"`;
+  // i numeri puri (anche negativi) restano numeri: nessun apice
+  const q = (s: string) => `"${(/^-?\d+$/.test(s) ? s : s.replace(/^(\s*[=+\-@]|[\t\r])/, "'$1")).replace(/"/g, '""')}"`;
   return '﻿' + rows.map((l) => l.map(q).join(';')).join('\r\n') + '\r\n';
 }
 

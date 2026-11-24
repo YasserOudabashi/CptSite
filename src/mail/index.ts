@@ -47,7 +47,7 @@ export interface EnrollmentOpenResult extends QueueResult {
 // Mette in coda un destinatario per riga e invia subito i primi lotti; il resto lo invia il worker.
 export async function sendEnrollmentOpen(
   pool: Pool,
-  opts: { createdBy?: number } = {},
+  opts: { createdBy?: number; onlyOnce?: boolean } = {},
 ): Promise<EnrollmentOpenResult> {
   const year = await getCurrentSchoolYear(pool);
   const siteUrl = process.env.SITE_URL ? `\n\n${process.env.SITE_URL}` : '';
@@ -56,6 +56,11 @@ export async function sendEnrollmentOpen(
   let recipients: number;
   try {
     await client.query('BEGIN');
+    // Con onlyOnce: lock sulla riga dell'anno e controllo nella stessa transazione dell'accodamento (niente doppio invio).
+    if (opts.onlyOnce) {
+      const sent = await client.query('SELECT enrollment_mail_sent_at AS sent FROM school_years WHERE id = $1 FOR UPDATE', [year.id]);
+      if (sent.rows[0].sent) throw new Error("La mail di apertura è già stata inviata quest'anno: per reinviarla spunta la conferma.");
+    }
     const { rows } = await client.query<{ id: number }>(
       `INSERT INTO mail_jobs (kind, subject, body, school_year_id, created_by)
        VALUES ('enrollment_open', $1, $2, $3, $4) RETURNING id`,

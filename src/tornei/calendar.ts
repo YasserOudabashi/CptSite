@@ -87,7 +87,8 @@ export function previewHtml(t: Tournament, p: { plan: Plan; teams: { id: number;
       .map((m) => `<li>${stage === 'girone' ? `Girone ${String.fromCharCode(65 + (m.group ?? 0))} · ` : ''}turno ${m.round}: ${label(m.home, m.homeSrc)} – ${label(m.away, m.awaySrc)}</li>`)
       .join('');
   const skipped = p.skipped.length ? `<p><strong>Escluse (incomplete, non accettate):</strong> ${p.skipped.map((x) => esc(x.name)).join(', ')}</p>` : '';
-  return `${skipped}${groups}<h3>Partite dei gironi</h3><ol style="padding-left:1.2rem">${list('girone') || '<li>—</li>'}</ol>
+  const warn = p.plan.warnings.map((w) => `<p><strong>Attenzione:</strong> ${esc(w)}</p>`).join('');
+  return `${skipped}${warn}${groups}<h3>Partite dei gironi</h3><ol style="padding-left:1.2rem">${list('girone') || '<li>—</li>'}</ol>
 <h3>Eliminazione</h3><ol style="padding-left:1.2rem">${list('eliminazione') || '<li>—</li>'}</ol>
 <form method="post" action="/tornei/${t.id}/calendario" style="display:inline"><input type="hidden" name="seed" value="${seed}"><button>${t.status === 'in corso' ? 'Sostituisci il calendario con questo' : 'Conferma e avvia il torneo'}</button></form>
 <a href="/tornei/${t.id}/calendario?seed=${Math.floor(Math.random() * 1e9)}">Sorteggia di nuovo</a>`;

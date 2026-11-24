@@ -98,7 +98,7 @@ export type PlanMatch = {
   awaySrc?: string;
   next?: { round: number; pos: number; slot: 'home' | 'away' };
 };
-export type Plan = { groups: number[][]; draw: Map<number, number>; matches: PlanMatch[] };
+export type Plan = { groups: number[][]; draw: Map<number, number>; matches: PlanMatch[]; warnings: string[] };
 export type PlanRules = { format: 'girone' | 'eliminazione' | 'gironi_eliminazione'; double_round: boolean; groups_count: number; qualifiers: number };
 
 // Teste di serie scelte a mano per prime (per numero), le altre sorteggiate con il seme dato.
@@ -113,8 +113,27 @@ export function buildPlan(rules: PlanRules, teams: PlanTeam[], seed: number): Pl
   const ordered = orderTeams(teams, r);
   const draw = new Map(shuffle(ordered, r).map((id, i) => [id, i + 1]));
   const matches: PlanMatch[] = [];
+  const warnings: string[] = [];
   const koFrom = (slots: ({ team: number } | { src: string })[]) => {
-    for (const m of knockout(slots.length)) {
+    const bracket = knockout(slots.length);
+    // Qualificate dello stesso girone al primo turno: si scambiano gli slot finché si può; se resta un accoppiamento si avvisa.
+    const grp = (s: { team: number } | { src: string }) => ('src' in s ? s.src.split(':')[0] : null);
+    const first = bracket.filter((m) => m.round === 1 && m.a != null && m.b != null);
+    const bad = () => first.filter((m) => grp(slots[m.a! - 1]) !== null && grp(slots[m.a! - 1]) === grp(slots[m.b! - 1])).length;
+    for (let guard = 0; guard < 50 && bad() > 0; guard++) {
+      const m = first.find((x) => grp(slots[x.a! - 1]) !== null && grp(slots[x.a! - 1]) === grp(slots[x.b! - 1]))!;
+      const before = bad();
+      let fixed = false;
+      for (let j = 0; j < slots.length && !fixed; j++) {
+        if (j === m.a! - 1 || j === m.b! - 1) continue;
+        [slots[m.b! - 1], slots[j]] = [slots[j], slots[m.b! - 1]];
+        if (bad() < before) fixed = true;
+        else [slots[m.b! - 1], slots[j]] = [slots[j], slots[m.b! - 1]];
+      }
+      if (!fixed) break;
+    }
+    if (bad() > 0) warnings.push('Al primo turno a eliminazione si incontrano comunque squadre qualificate dallo stesso girone (con questi numeri non si può evitare).');
+    for (const m of bracket) {
       const slot = (s: number | null) => (s == null ? {} : 'team' in slots[s - 1] ? { team: (slots[s - 1] as { team: number }).team } : { src: (slots[s - 1] as { src: string }).src });
       const a = slot(m.a) as { team?: number; src?: string };
       const b = slot(m.b) as { team?: number; src?: string };
@@ -123,7 +142,7 @@ export function buildPlan(rules: PlanRules, teams: PlanTeam[], seed: number): Pl
   };
   if (rules.format === 'eliminazione') {
     koFrom(ordered.map((team) => ({ team })));
-    return { groups: [], draw, matches };
+    return { groups: [], draw, matches, warnings };
   }
   const k = rules.format === 'girone' ? 1 : rules.groups_count;
   const groups = snake(ordered, k);
@@ -136,5 +155,5 @@ export function buildPlan(rules: PlanRules, teams: PlanTeam[], seed: number): Pl
     for (let q = 1; q <= rules.qualifiers; q++) for (let gi = 0; gi < k; gi++) slots.push({ src: `G${gi}:${q}` });
     koFrom(slots);
   }
-  return { groups, draw, matches };
+  return { groups, draw, matches, warnings };
 }
