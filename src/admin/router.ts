@@ -53,6 +53,7 @@ const ROLE_LABEL: Record<string, string> = {
   docente: 'Docente',
   relatore: 'Relatore',
   resp_ga: 'Responsabile GA',
+  resp_tornei: 'Responsabile tornei',
   resp_sito: 'Responsabile sito',
 };
 

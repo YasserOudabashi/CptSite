@@ -223,3 +223,5 @@ Chiuso (commit "Fix revisione: ..."):
 - Pulizia periodica (cleanupExpired) nel worker mail e all'avvio.
 - Fase 5: testo Home su fase "Solo organizzatori", link attivita' solo con ga.view, ?anno non valido = 404, addContacts solo persone degli anni precedenti, una riga per persona (ruoli aggregati), "anni passati" = nome anno < corrente.
 Resta / non fatto: verifica in browser; doppio invio concorrente della mail di apertura non ha un guard nel mail job (il lock sulla riga dell'anno copre solo il cambio di stato); la pagina /attivita/:id e l'archivio non hanno limiti di anno oltre ga.manage.
+
+### US-031 (2026-11-24)\n- Migrazione 015_tornei.sql: tabelle tournaments, organizers, referees, fields, groups, teams, members, matches, match_events, result_log; ruolo resp_tornei (RoleCode, ROLE_CODES, etichetta admin). Organizzatore torneo e Arbitro sono assegnazioni per torneo (tabelle), non ruoli globali. UNIQUE(tournament_id,user_id) su tournament_members = una sola squadra per torneo; notifica 'tornei_live' (trigger) per il tempo reale. Test tests/tornei-schema.test.ts. Verifica in browser: non fatta.

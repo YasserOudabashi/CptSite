@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { assignRole, removeRole, type RoleCode } from '../users/roles';
 
-export const ROLE_CODES: RoleCode[] = ['allievo', 'docente', 'relatore', 'resp_ga', 'resp_sito'];
+export const ROLE_CODES: RoleCode[] = ['allievo', 'docente', 'relatore', 'resp_ga', 'resp_tornei', 'resp_sito'];
 
 export interface UserRow {
   id: number;

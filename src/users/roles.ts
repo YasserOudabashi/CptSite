@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-export type RoleCode = 'allievo' | 'docente' | 'relatore' | 'resp_ga' | 'resp_sito';
+export type RoleCode = 'allievo' | 'docente' | 'relatore' | 'resp_ga' | 'resp_tornei' | 'resp_sito';
 
 export async function assignRole(pool: Pool, userId: number, role: RoleCode): Promise<void> {
   await pool.query(
