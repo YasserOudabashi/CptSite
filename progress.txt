@@ -200,3 +200,11 @@
 - `src/ga/exports.ts`: `exportRows` (attivita, allievi con classe e programma, relatori, docenti, presenze; sempre solo l'anno scelto, filtri kind/ids/classe), `toCsv` (BOM UTF-8, ';', neutralizza formule; ora usato anche da materialsCsv) e `toXlsx` scritto a mano (zip senza compressione, celle di testo, nessuna dipendenza nuova; aperto con openpyxl in una verifica manuale).
 - GET /gestione-ga/export?what=&fmt=csv|xlsx&anno=&kind=&ids=&classe= (ga.manage) e modulo 'Esporta' in /gestione-ga. 'Allievi' = chi ha iscrizioni nell'anno + (se l'anno e' quello corrente) tutti gli allievi registrati.
 - Test tests/exports.test.ts; 114/114 verdi. Verifica in browser: non fatta.
+
+### US-028 + US-029 (2026-11-24)
+- US-028: tutte le pagine filtravano gia' su is_current; aggiunto l'archivio in sola lettura: GET /gestione-ga?anno=ID (ga.manage = resp_ga e resp_sito) mostra attivita', relatori, docenti di quell'anno senza form; elenco "Anni passati" in /gestione-ga. Gli altri ruoli: 403.
+- US-029: `src/ga/reuse.ts`. In /proponi elenco "Le mie attivita' degli anni scorsi" con link Riproponi (/proponi?da=ID) che precompila il modulo (giorno da riscegliere, modificabile; la proposta nasce solo all'invio, stato 'proposta', originale intatto). In /gestione-ga sezione "Riproponi relatori e docenti" (POST /gestione-ga/contatti -> year_contacts, tabella della migrazione 013).
+- Test tests/years.test.ts. Nota: US-028 e US-029 sono in un solo commit (stessi file manage.ts/router.ts). Verifica in browser: non fatta.
+
+### US-030 (2026-11-24)
+- src/ui/home.ts: date GA (o "da definire"), stato iscrizioni, n. attivita' scelte con link /programma (solo chi puo' iscriversi), link /attivita, tre righe su precedenza e assegnazione casuale; nessun sondaggio/bacheca. Test tests/home.test.ts; 119/119 verdi. Verifica in browser: non fatta.

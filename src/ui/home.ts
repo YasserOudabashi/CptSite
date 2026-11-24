@@ -1,17 +1,32 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
-import { STATES, getEnrollState } from '../ga/enroll';
+import { STATES, getEnrollState, mySessionIds } from '../ga/enroll';
+import { listGaDays } from '../admin/settings';
+import { can } from '../auth/permissions';
 
 export function homeRouter(pool: Pool): Router {
   const router = Router();
-  router.get('/', async (_req, res, next) => {
+  router.get('/', async (req, res, next) => {
     try {
       const state = await getEnrollState(pool);
+      const days = (await listGaDays(pool)).filter((d) => d.day).map((d) => d.day!.split('-').reverse().join('.'));
+      const enroll = can(req.user, 'ga.enroll');
+      const n = enroll ? (await mySessionIds(pool, req.user!.id)).size : 0;
       res.send(`<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Home</title></head><body>
 <h1>Home</h1>
 <p>Benvenuto nel portale delle Giornate Autogestite del CPT Trevano.</p>
-<p>Iscrizioni alle GA: <strong>${STATES[state]}</strong></p>
+<p>Date delle GA: <strong>${days.length ? days.join(', ') : 'da definire'}</strong></p>
+<p>Iscrizioni alle GA: <strong>${STATES[state]}</strong></p>${
+        enroll ? `<p>Attività scelte: <strong>${n}</strong> — <a href="/programma">il mio programma</a></p>` : ''
+      }
+<p><a href="/attivita">Vedi le attività</a></p>
+<h2>Come funziona</h2>
+<ul>
+<li>Le iscrizioni si aprono in un momento deciso dai responsabili: chi si iscrive per primo ha la precedenza sui posti, e quando un'attività è piena non si può più scegliere.</li>
+<li>Puoi scegliere una sola attività per ogni blocco orario.</li>
+<li>Alla chiusura delle iscrizioni, chi ha ancora blocchi liberi viene assegnato a caso a un'attività con posti disponibili.</li>
+</ul>
 </body></html>`);
     } catch (e) {
       next(e);
