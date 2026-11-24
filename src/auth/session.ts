@@ -15,14 +15,16 @@ export type LoginResult =
   | { ok: true; token: string }
   | { ok: false; reason: 'invalid' | 'locked' };
 
-export async function login(pool: Pool, loginId: string, password: string): Promise<LoginResult> {
+// Blocco per (ID, IP): il tentativo si registra prima della verifica e si conta dopo (nessuna corsa tra richieste parallele).
+export async function login(pool: Pool, loginId: string, password: string, ip = ''): Promise<LoginResult> {
   const id = loginId.trim().toLowerCase();
+  const ins = await pool.query('INSERT INTO login_failures (login_id, ip) VALUES ($1, $2) RETURNING id', [id, ip]);
   const { rows: f } = await pool.query(
     `SELECT count(*)::int AS n FROM login_failures
-     WHERE login_id = $1 AND created_at > now() - make_interval(mins => $2)`,
-    [id, LOCK_MINUTES],
+     WHERE login_id = $1 AND ip = $2 AND created_at > now() - make_interval(mins => $3)`,
+    [id, ip, LOCK_MINUTES],
   );
-  if (f[0].n >= MAX_FAILURES) return { ok: false, reason: 'locked' };
+  if (f[0].n > MAX_FAILURES) return { ok: false, reason: 'locked' };
 
   const { rows } = await pool.query<{ id: number; password_hash: string | null }>(
     'SELECT id, password_hash FROM users WHERE lower(login_id) = $1',
@@ -30,11 +32,8 @@ export async function login(pool: Pool, loginId: string, password: string): Prom
   );
   const user = rows[0];
   const ok = !!user?.password_hash && (await verifySecret(password, user.password_hash));
-  if (!ok) {
-    await pool.query('INSERT INTO login_failures (login_id) VALUES ($1)', [id]);
-    return { ok: false, reason: 'invalid' };
-  }
-  await pool.query('DELETE FROM login_failures WHERE login_id = $1', [id]);
+  if (!ok) return { ok: false, reason: 'invalid' };
+  await pool.query('DELETE FROM login_failures WHERE login_id = $1 AND ip = $2', [id, ip]);
   const token = randomBytes(32).toString('hex');
   await pool.query(
     `INSERT INTO sessions (token_hash, user_id, expires_at)

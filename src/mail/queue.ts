@@ -104,6 +104,7 @@ export async function processMailQueue(pool: Pool, now: Date = new Date()): Prom
 export function startMailWorker(pool: Pool, intervalMs = 10 * 60 * 1000): () => void {
   const timer = setInterval(() => {
     processMailQueue(pool).catch((err) => console.error('Coda mail:', err));
+    cleanupExpired(pool).catch((err) => console.error('Pulizia:', err));
   }, intervalMs);
   timer.unref();
   return () => clearInterval(timer);
@@ -139,4 +140,17 @@ export async function getMailLog(pool: Pool): Promise<MailJobLog[]> {
       .filter((r) => r.job_id === j.id)
       .map(({ job_id: _, ...r }) => r),
   }));
+}
+
+// Pulizia periodica: sessioni, tentativi e codici scaduti da più di un giorno.
+export async function cleanupExpired(pool: Pool): Promise<void> {
+  for (const sql of [
+    `DELETE FROM sessions WHERE expires_at < now() - interval '1 day'`,
+    `DELETE FROM login_failures WHERE created_at < now() - interval '1 day'`,
+    `DELETE FROM registration_attempts WHERE created_at < now() - interval '1 day'`,
+    `DELETE FROM registration_codes WHERE expires_at < now() - interval '1 day'`,
+    `DELETE FROM password_resets WHERE expires_at < now() - interval '1 day'`,
+  ]) {
+    await pool.query(sql);
+  }
 }

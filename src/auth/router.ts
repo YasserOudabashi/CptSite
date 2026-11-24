@@ -75,7 +75,7 @@ ${flash}
   router.post('/login', async (req, res, next) => {
     try {
       const loginId = String(req.body?.loginId ?? '');
-      const r = await login(pool, loginId, String(req.body?.password ?? ''));
+      const r = await login(pool, loginId, String(req.body?.password ?? ''), req.ip ?? 'unknown');
       if (r.ok) {
         res.setHeader('Set-Cookie', sessionCookie(r.token));
         res.redirect(303, '/');

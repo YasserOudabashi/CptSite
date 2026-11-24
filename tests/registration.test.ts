@@ -1,3 +1,4 @@
+process.env.RATE_LIMIT_IP_PER_HOUR = '5'; // il limite per IP di produzione è 300
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';

@@ -8,7 +8,7 @@ import { seed } from './db/seed';
 import { gaRouter } from './ga/router';
 import { homeRouter } from './ui/home';
 import { layoutMiddleware } from './ui/layout';
-import { processMailQueue, startMailWorker } from './mail/queue';
+import { cleanupExpired, processMailQueue, startMailWorker } from './mail/queue';
 import { getTransport } from './mail/transport';
 
 const PORT = process.env.PORT ?? '3000';
@@ -18,11 +18,13 @@ const pool = new Pool({
 });
 
 async function start() {
+  if (process.env.NODE_ENV === 'production' && !process.env.SITE_URL) throw new Error('SITE_URL è obbligatoria in produzione.');
   getTransport(); // in produzione senza SMTP_HOST si ferma qui
   await runMigrations(pool);
   await seed(pool);
   // Coda mail a lotti: riprende all'avvio e poi ogni 10 minuti (anche il giorno dopo il limite).
   processMailQueue(pool).catch((err) => console.error('Coda mail:', err));
+  cleanupExpired(pool).catch((err) => console.error('Pulizia:', err));
   startMailWorker(pool);
   app.use(sessionMiddleware(pool));
   app.use(layoutMiddleware(pool));
