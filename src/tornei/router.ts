@@ -4,6 +4,7 @@ import { can } from '../auth/permissions';
 import { esc } from '../ui/layout';
 import { CRITERIA, FORMATS, Tournament, addField, addPerson, approvedActivities, canCreate, canManage, canSee, createTournament, getTournament, hasMatches, listFields, people, removeField, removePerson, setStatus, updateTournament } from './service';
 import { addMember, addTeamManual, approveTeam, confirmMember, joinTournament, listTeams, removeMember, teamsSection, withdrawTeam } from './teams';
+import { generateCalendar, previewHtml, previewPlan, setSeedNo } from './calendar';
 import { doc, go, takeFlash } from './ui';
 
 const chk = (v: boolean) => (v ? ' checked' : '');
@@ -122,7 +123,7 @@ ${teamsSection(t, await listTeams(pool, t), req.user!, manage)}`));
         `<form method="post" action="/tornei/${t.id}/persone/${kind}"><p><label>${label} (nome o ID) <input name="q" required></label> <button>Aggiungi</button></p></form>`;
       const next_ = t.status === 'bozza' ? 'iscrizioni' : t.status === 'iscrizioni' && !locked ? 'bozza' : t.status === 'in corso' ? 'concluso' : '';
       res.send(doc(`Gestione ${t.name}`, `<h1>Gestione: ${esc(t.name)}</h1>${takeFlash(req, res)}
-<p><a href="/tornei/${t.id}">Pagina del torneo</a> · stato: <strong>${t.status}</strong>${
+<p><a href="/tornei/${t.id}">Pagina del torneo</a>${['iscrizioni', 'in corso'].includes(t.status) ? ` · <a href="/tornei/${t.id}/calendario">Calendario: anteprima e generazione</a>` : ''} · stato: <strong>${t.status}</strong>${
         next_ ? ` <form method="post" action="/tornei/${t.id}/stato" style="display:inline"><input type="hidden" name="to" value="${next_}"><button>Passa a "${next_}"</button></form>` : ''
       }</p>
 ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
@@ -186,6 +187,58 @@ ${form(t, [], `/tornei/${t.id}/gestione`, locked, false)}
   join('squadre/:team(\\d+)/conferma', (req, id) => confirmMember(pool, req.user!, id, team(req)), 'Hai confermato.');
   join('squadre/:team(\\d+)/ritira', (req, id) => withdrawTeam(pool, req.user!, id, team(req)), 'Squadra ritirata.');
   join('squadre/:team(\\d+)/approva', (req, id) => approveTeam(pool, req.user!, id, team(req), req.body.to === '1'), 'Fatto.');
+
+  // --- calendario: anteprima (non salva), teste di serie, conferma
+  router.get('/tornei/:id(\\d+)/calendario', async (req, res, next) => {
+    try {
+      const t = await managed(req);
+      if (!t) return void res.status(403).send('Non autorizzato');
+      const seed = Number(req.query.seed) || Math.floor(Math.random() * 1e9);
+      let body: string;
+      try {
+        if (!['iscrizioni', 'in corso'].includes(t.status)) throw new Error('Il calendario si genera con le iscrizioni aperte (o con il torneo in corso, finché non ci sono risultati).');
+        const p = await previewPlan(pool, t, seed);
+        const seeds = `<form method="post" action="/tornei/${t.id}/serie"><details><summary>Teste di serie (facoltative)</summary>${p.teams
+          .map((x) => `<p><label>${esc(x.name)} <input type="number" min="1" name="s${x.id}" value="${x.seed_no ?? ''}" style="width:4rem"></label></p>`)
+          .join('')}<button>Salva teste di serie</button></details></form>`;
+        body = seeds + previewHtml(t, p, seed);
+      } catch (e) {
+        body = `<p>${esc((e as Error).message)}</p>`;
+      }
+      res.send(doc(`Calendario ${t.name}`, `<h1>Calendario: ${esc(t.name)}</h1>${takeFlash(req, res)}<p><a href="/tornei/${t.id}/gestione">Gestione</a></p>${body}`));
+    } catch (e) {
+      next(e);
+    }
+  });
+  router.post('/tornei/:id(\\d+)/calendario', async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      try {
+        await generateCalendar(pool, req.user!, id, Number(req.body.seed) || 1);
+      } catch (e) {
+        return go(res, `/tornei/${id}/calendario`, (e as Error).message);
+      }
+      go(res, `/tornei/${id}`, 'Calendario generato: il torneo è in corso.');
+    } catch (e) {
+      next(e);
+    }
+  });
+  router.post('/tornei/:id(\\d+)/serie', async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      let m = 'Teste di serie salvate.';
+      try {
+        for (const [k, v] of Object.entries(req.body as Record<string, string>)) {
+          if (/^s\d+$/.test(k)) await setSeedNo(pool, req.user!, id, Number(k.slice(1)), String(v).trim() ? Number(v) : null);
+        }
+      } catch (e) {
+        m = (e as Error).message;
+      }
+      go(res, `/tornei/${id}/calendario`, m);
+    } catch (e) {
+      next(e);
+    }
+  });
 
   return router;
 }
